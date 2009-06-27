@@ -157,7 +157,7 @@
       
       (lambda (&optional (ax 0d0) (ay 0d0))
 	(setf (elt input-port 2) ax
-	      (elt input-port 2) ay)
+	      (elt input-port 3) ay)
 	(funcall compiled memory input-port output-port)
 	output-port))))
 
