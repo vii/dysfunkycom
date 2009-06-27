@@ -79,7 +79,7 @@
 	     
 	    (cond ((zerop score)
 		   (list (make-visat :name "dysfunc" :sx x :sy y)
-			 (make-visat :name "target" :sx (- tx x) :sy (- ty y) :color sdl:*green*)))
+			 (make-visat :name "target" :sx (- x tx) :sy (- y ty) :color sdl:*green*)))
 		  (t 
 		    (format *debug-io* "Finishing because score is ~A~%" score)
 		    nil)))))))))
@@ -199,10 +199,15 @@
 	(t
 	 'make-visualise-oport-2)))
 
+(defvar *orbit-code-dir* 
+  (with-standard-io-syntax (format nil "~A/../orbit-code/"  
+				   #.(directory-namestring *compile-file-truename*))))
+
+
 (defun file-for-scenario (scenario)
-  (with-standard-io-syntax (format nil "~A/../orbit-code/bin~D.obf" 
-				   (load-time-value (directory-namestring *load-truename*))
-				   (floor (/ scenario 1000)))))
+  (merge-pathnames
+   (with-standard-io-syntax (format nil "bin~D.obf" (floor (/ scenario 1000))))
+   *orbit-code-dir*))
 
 (defun visualise-scenario (scenario &key frames (controller (controller-for-scenario scenario)) 
 			   (visualiser-func (visualiser-for-scenario scenario)) (file (file-for-scenario scenario)))
