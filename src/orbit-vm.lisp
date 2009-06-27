@@ -24,7 +24,7 @@
                         (if (= (status) 1) r1 r2))))))
 
         (let ((op  (ldb (byte  4 24) insn)) ; S-type
-              (imm (ldb (byte 4 20) insn)) ; (byte 10 14) for the whole IMM
+              (imm (ldb (byte 3 21) insn)) ; (byte 10 14) for the whole IMM
               (r1  (ldb (byte 14  0) insn)))
           (ecase op
             (0)
@@ -69,7 +69,7 @@
 		(msg "Reading from memory ~D the value ~A" i (aref mem i))
 		(aref mem i))
 	     ((setf aref-mem) (val i)
-	       (msg "Changing memory ~D from to ~A to ~A" i (aref mem i) val)
+	       (msg "Changing memory ~D from ~A to ~A" i (aref mem i) val)
 	      (setf (aref mem i) val)))
       ,@(loop for stmt in body
 	      collect `(msg "---- executing ~A" ',stmt)
