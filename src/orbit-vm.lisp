@@ -136,8 +136,7 @@
 	  (input-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0))
 	  (output-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0)))
       (setf (elt input-port #x3e80) scenario)
-      (funcall (eval program) memory input-port output-port)
-      memory)))
+      (funcall (eval program) memory input-port output-port))))
 
 (defun describe-output (oport list)
   (loop for name in list
