@@ -196,19 +196,18 @@ To see the earth disappear
 (defun problem-2-controller (sim)
   (multiple-value-bind (x0 y0 vx0 vy0)
       (position-and-direction-target sim)
-    (print (list x0 y0 vx0 vy0))
     (multiple-value-bind (hohmann-time init-angle end-angle _ target-radius)
 	(problem-2-calc-jump sim)
       (declare (ignorable _))
-      (print (list hohmann-time init-angle end-angle target-radius))
       ;; 1. wait to the right position
       (let* ((radius (d x0 y0))
 	     (angular-velocity (/ (norm (vec vx0 vy0)) radius))
 	     (triggering-angle 
 	      (normalize-angle
-	       (-
+	       (+
+		(* angular-velocity hohmann-time)
 		(- end-angle init-angle)
-		(* angular-velocity hohmann-time)))))
+		))))
 	(iter (for output = (sim-step sim))
 	      (destructuring-array-bind (nil nil x y xo yo) output
 		(let ((angle-to-opponent
@@ -218,16 +217,15 @@ To see the earth disappear
 			 (vec (- x xo) (- y yo))))))
 		  (when (approximately-equal angle-to-opponent
 					     triggering-angle
-					     0.001)
+					     0.00001)
 		    (leave))))))
-      (print (sim-time sim))
       (print 'leave)
       ;; 2. hohmann
       (problem-1-controller sim target-radius)
-      (print (sim-time sim))
-      (print 'stay)
       ;; 3. feedback loop for adjustment
-      (problem-2-chaser sim)
+      
+      ;(problem-2-chaser sim)
+
       ;; return val
       (values (reverse (sim-thrusts sim)) (sim-time sim)))))
 
