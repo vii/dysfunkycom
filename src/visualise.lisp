@@ -91,14 +91,16 @@
 	     (xform-radius (r)
 	       (round (let ((dim (max (sdl:width sdl:*default-display*) (sdl:height sdl:*default-display*))))
 			(* (/ r scale 2) dim))))
+	     (next-step ()
+	       (loop repeat (if playing playing-steps 1) do
+		     (one-step)))
 	     (one-step ()
 	       (setf satspos (funcall func))
 	       (unless satspos
 		 (return-from visualise time))
 	       (incf time))
-	     (next-step ()
-	       (loop repeat (if playing playing-steps 1) do
-		     (one-step)))
+	     (skip-frames (n)
+	       (loop repeat n do (one-step)))
 	     (crashing-into-earth ()
 	       (iter (for visat in satspos)
 		     (thereis (>= (* 1.01d0 (^2 +radius-earth+))
@@ -137,6 +139,12 @@
 	  (:key-down-event
 	    (:key key)
 	    (cond ((sdl:key= key :sdl-key-escape) (sdl:push-quit-event))
+		  ((sdl:key= key :sdl-key-q) (skip-frames 100))
+		  ((sdl:key= key :sdl-key-w) (skip-frames 500))
+		  ((sdl:key= key :sdl-key-e) (skip-frames 1000))
+		  ((sdl:key= key :sdl-key-r) (skip-frames 5000))
+		  ((sdl:key= key :sdl-key-t) (skip-frames 10000))
+		  ((sdl:key= key :sdl-key-y) (skip-frames 50000))
 		  ((sdl:key= key :sdl-key-space)
 		   (setf playing (not playing)))
 		  (t 	
