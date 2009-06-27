@@ -99,8 +99,15 @@ Outputs: a list of double-floats
 		;; final impulse
 		(format t "~&Give final impulse: (~a, ~a)~%" (vx final-dV) (vy final-dV))
 		(run simulator (- (vx final-dV)) (- (vy final-dV)))
+		;; wait until simulator terminates
+		(iter (for output = (run simulator 0d0 0d0))
+		      (destructuring-array-bind (score nil nil nil nil) output
+			(while (zerop score)))
+		      (finally
+		       (format t "~&The final score is: ~a~%" (aref output 0))))
+		;; result
 		(nreverse thrusts)))))
       (error (c)
 	(format t "~&Satellite failed with program error: ~a~%" c)
-	(nreverse thrusts)))))
+	(nreverse thrusts))))))
 
