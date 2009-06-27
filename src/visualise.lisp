@@ -33,10 +33,10 @@
   (lambda ()
     (let ((oport (funcall func)))
       (when oport
-	(destructuring-bind 
-	      (score fuel x y &rest rest)
+	(destructuring-array-bind 
+	      (score fuel x y)
 	   (coerce oport 'list)
-	  (declare (ignore fuel rest))
+	  (declare (ignore fuel))
 	  (check-type x double-float)
 
 	  (cond ((zerop score)

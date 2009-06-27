@@ -15,10 +15,11 @@
 	       (:module :src
 			:components (
 				     (:file "package")
-				     #-darwin (:file "visualise" :depends-on ("physics"))
+				     #-darwin (:file "visualise" :depends-on ("physics" "macros"))
 				     (:file "orbit-vm" :depends-on ("package"))
 				     (:file "constants" :depends-on ("package"))
 				     (:file "math" :depends-on ("package"))
+				     (:file "macros" :depends-on ("package"))
 				     (:file "physics" :depends-on ("constants"))
 				     (:file "submission" :depends-on ("constants"))
 				     (:file "control" :depends-on ("physics"))
