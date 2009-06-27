@@ -55,14 +55,15 @@ Outputs: a list of double-floats
 (defun position-and-direction-target (sim &optional (target-offset 4))
   (let ((simulator (make-simple-simulator-func (copy-sim sim))))
     (flet ((pos ()
-	    (let ((oport (funcall simulator)))
-	      (destructuring-array-bind (nil nil x y)
-					oport
-					(values (- (elt oport target-offset) x) (- (elt oport (1+ target-offset)) y))))))
+	     (let ((oport (funcall simulator)))
+	       (destructuring-array-bind (nil nil x y)
+		   oport
+		 (values (- x (elt oport target-offset))
+			 (- y (elt oport (1+ target-offset))))))))
       (multiple-value-bind (x0 y0)
 	  (pos)
 	(multiple-value-bind (x1 y1)
-	  (pos)
+	    (pos)
 	  (values x0 y0 (- x1 x0) (- y1 y0)))))))
 
 (defun problem-1-controller (sim &optional (r (problem-1-target-radius sim)))
@@ -188,28 +189,35 @@ To see the earth disappear
 (defun problem-2-controller (sim)
   (multiple-value-bind (x0 y0 vx0 vy0)
       (position-and-direction-target sim)
+    (print (list x0 y0 vx0 vy0))
     (multiple-value-bind (hohmann-time init-angle end-angle _ target-radius)
 	(problem-2-calc-jump sim)
       (declare (ignorable _))
+      (print (list hohmann-time init-angle end-angle target-radius))
       ;; 1. wait to the right position
       (let* ((radius (d x0 y0))
 	     (angular-velocity (/ (norm (vec vx0 vy0)) radius))
 	     (triggering-angle (normalize-angle
 				(- (- end-angle init-angle)
 				   (* angular-velocity hohmann-time)))))
+	(print (list radius angular-velocity triggering-angle))
 	(iter (for output = (sim-step sim))
 	      (destructuring-array-bind (nil nil x y xo yo) output
 		(let ((angle-to-opponent
-		       (calc-angle-between-vectors
-			(vec x y)
-			(vec (- x xo) (- y yo)))))
+		       (normalize-angle
+			(calc-angle-between-vectors
+			 (vec x y)
+			 (vec (- x xo) (- y yo))))))
 		  (when (approximately-equal angle-to-opponent
 					     triggering-angle
 					     0.001)
 		    (leave))))))
+      (print (sim-time sim))
       (print 'leave)
       ;; 2. hohmann
       (problem-1-controller sim target-radius)
+      (print (sim-time sim))
+      (print 'stay)
       ;; 3. feedback loop for adjustment
       (iter (with dVx = 0d0)
 	    (with dVy = 0d0)
@@ -219,7 +227,7 @@ To see the earth disappear
 	    (destructuring-array-bind (score nil nil nil xo yo) output
 	      (when (not (zerop score))
 		(leave))
-	      ;; (print (d xo yo))
+	      (print (d xo yo))
 	      ))
       ;; return val
       (values (reverse (sim-thrusts sim)) (sim-time sim)))))
