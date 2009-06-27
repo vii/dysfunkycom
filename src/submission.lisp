@@ -70,10 +70,13 @@ Example:
 ;;; (write-submission 1004d0 (rest *) "dysfunkycom/submissions/1004.1")
 
 (defun write-submission-from-frames (scenario frames filename)
-  "THRUSTS contains pairs of doubles, of _every_ frame from frame _1_.
+  "THRUSTS contains pairs of doubles, of _every_ frame from frame _0_.
 The last frame should be the first one that gives a non-zero score.
 Example:
 \(write-submission 1001d0 '\(\(1.0d0 0.5d0) \(1.0d0 0.5d0) \(0.0d0 0.5d0) \(0.0d0 0.5d0)) \"submission-test\")"
   (with-open-file (s filename :direction :output :if-exists :supersede
 		     :element-type '(unsigned-byte 8))
-    (write-sequence (submission scenario (append `((0 (16000 ,scenario))) frames)) s)))
+    (let ((full-frames (if (= (first (first frames)) 0)
+				     (cons (cons 0 (append `((16000 ,scenario)) (rest (first frames)))) (rest frames))
+				     (append `((0 (16000 ,scenario))) frames))))
+      (write-sequence (submission scenario full-frames) s))))
