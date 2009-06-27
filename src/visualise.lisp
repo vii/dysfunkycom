@@ -166,18 +166,19 @@
 	  (:quit-event () t)
 	  (:key-down-event
 	    (:key key)
-	    (cond ((sdl:key= key :sdl-key-escape) (sdl:push-quit-event))
-		  ((sdl:key= key :sdl-key-q) (skip-frames 100))
-		  ((sdl:key= key :sdl-key-w) (skip-frames 500))
-		  ((sdl:key= key :sdl-key-e) (skip-frames 1000))
-		  ((sdl:key= key :sdl-key-r) (skip-frames 5000))
-		  ((sdl:key= key :sdl-key-t) (skip-frames 10000))
-		  ((sdl:key= key :sdl-key-y) (skip-frames 50000))
-		  ((sdl:key= key :sdl-key-space)
-		   (setf playing (not playing)))
-		  (t 	
-		   (next-step)
-		   (draw))))
+	    (cond 
+	      ((sdl:key= key :sdl-key-escape) (sdl:push-quit-event))
+	      ((sdl:key= key :sdl-key-q) (skip-frames 100))
+	      ((sdl:key= key :sdl-key-w) (skip-frames 500))
+	      ((sdl:key= key :sdl-key-e) (skip-frames 1000))
+	      ((sdl:key= key :sdl-key-r) (skip-frames 5000))
+	      ((sdl:key= key :sdl-key-t) (skip-frames 10000))
+	      ((sdl:key= key :sdl-key-y) (skip-frames 50000))
+	      ((sdl:key= key :sdl-key-space)
+	       (setf playing (not playing)))
+	      (t 	
+	       (next-step)
+	       (draw))))
 	  (:video-expose-event () (sdl:update-display))
 	  (:idle ()
 		 (when playing
@@ -186,9 +187,27 @@
 	       
 
 
-(defun visualise-scenario (file scenario &key (frames (thrusts->frames scenario (hohmann-controller (make-simulator file scenario)))))
-  (let ((oport (cond ((> 2000 scenario) 'make-visualise-oport-1)
-		     (t 'make-visualise-oport-2))))
-    (visualise
-     (funcall oport (make-simple-simulator-func (make-simulator file scenario)) frames))))
+(defun controller-for-scenario (scenario)
+  (cond ((> 2000 scenario) 
+	 'problem-1-controller)
+	(t
+	 'problem-2-controller)))
+
+(defun visualiser-for-scenario (scenario)
+  (cond ((> 2000 scenario) 
+	 'make-visualise-oport-1)
+	(t
+	 'make-visualise-oport-2)))
+
+(defun file-for-scenario (scenario)
+  (with-standard-io-syntax (format nil "~A/../orbit-code/bin~D.obf" 
+				   (load-time-value (directory-namestring *load-truename*))
+				   (floor (/ scenario 1000)))))
+
+(defun visualise-scenario (scenario &key frames (controller (controller-for-scenario scenario)) 
+			   (visualiser-func (visualiser-for-scenario scenario)) (file (file-for-scenario scenario)))
+  (let ((scenario (coerce scenario 'double-float)))
+   (let ((sim (make-simulator file scenario)))
+     (visualise
+      (funcall visualiser-func (make-simple-simulator-func sim) (or frames (when controller (funcall controller (copy-sim sim)))))))))
 
