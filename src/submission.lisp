@@ -76,4 +76,4 @@ Example:
 \(write-submission 1001d0 '\(\(1.0d0 0.5d0) \(1.0d0 0.5d0) \(0.0d0 0.5d0) \(0.0d0 0.5d0)) \"submission-test\")"
   (with-open-file (s filename :direction :output :if-exists :supersede
 		     :element-type '(unsigned-byte 8))
-    (write-sequence (submission scenario (append `((0 (16000 ,scenario))) (list frames scenario thrusts))) s)))
+    (write-sequence (submission scenario (append `((0 (16000 ,scenario))) frames)) s)))
