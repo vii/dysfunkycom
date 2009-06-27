@@ -144,7 +144,8 @@
 	do (format t "~A = ~A~&" name val)))
 
 (defun describe-output-1 (oport)
-  (describe-output oport '(Score Fuel Sx Sy Radius)))
+  (describe-output oport '(Score Fuel Sx Sy Radius))
+  oport)
 
 (defun make-simulator (filename scenario)
   (multiple-value-bind (program initial-data) (load-program filename)
