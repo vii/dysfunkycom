@@ -34,11 +34,14 @@
 	 (r (sqrt (float (+ (* x x) (* y y)) 0d0))))
     (vec (/ x r) (/ y r))))
 
+(defun normalize-angle (angle)
+  (mod angle (* 2 pi)))
+
 (defun calc-angle-between-vectors (v1 v2)
   (let* ((v1 (normalize-vector v1))
 	 (v2 (normalize-vector v2)) 
-	 (angle (acos (vdot* v1 v2))))
-    (assert (<= 0d0 angle pi))
+	 (angle (- (atan (vy v2) (vx v2))
+		   (atan (vy v1) (vx v1)))))
     angle))
 
 (defun calc-unit-tangent-vector (v)
@@ -46,7 +49,7 @@
 
 (defun adjust-direction (v vref)
   (let ((angle (calc-angle-between-vectors v vref)))
-    (if (> angle #.(/ pi 2))
+    (if (or (> angle #.(/ pi 2)) (< angle #.(- (/ pi 2))))
 	(vec (- (vx v)) (- (vy v)))
 	v)))
 
@@ -63,6 +66,9 @@
 
 
 ;;; Ellipse fitting
+(declaim (inline angle))
+(defun angle (x y)
+  (atan y x))
 
 (defun estimate-ellipse (xy-pairs)
   "This function needs at least 6 pairs, the more the better \(and the slower)."

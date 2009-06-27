@@ -27,15 +27,218 @@ Outputs: a list of double-floats
 	 (* pi
 	    (sqrt (/ (expt (+ r1 r2) 3)
 		     (* 8d0 +g-m-earth+))))))
-    (list initial-delta-v
-	  final-delta-v
-	  estimated-time)))
+    (values initial-delta-v
+	    final-delta-v
+	    estimated-time)))
 
-(defun hohmann-controller (simulator)
+(defun estimate-target-radius (sim)
+  (let ((simulator (make-simple-simulator-func (copy-sim sim))))
+    (let ((output (funcall simulator)))
+      (destructuring-array-bind (nil nil x y tx ty)
+	  output
+	(d (- tx x) (- ty y))))))
+
+(defun problem-1-target-radius (sim)
+  (let ((simulator (make-simple-simulator-func (copy-sim sim))))
+    (destructuring-array-bind (nil nil nil nil r)
+	(funcall simulator)
+      r)))
+
+(defun position-and-direction (sim)
+  (let ((simulator (make-simple-simulator-func (copy-sim sim))))
+    (destructuring-array-bind (nil nil x0 y0)
+	(funcall simulator)
+      (destructuring-array-bind (nil nil x1 y1)
+	  (funcall simulator)
+	(values x0 y0 (- x1 x0) (- y1 y0))))))
+
+(defun position-and-direction-target (sim &optional (target-offset 4))
+  (let ((simulator (make-simple-simulator-func (copy-sim sim))))
+    (flet ((pos ()
+	     (let ((oport (funcall simulator)))
+	       (destructuring-array-bind (nil nil x y)
+		   oport
+		 (values (- x (elt oport target-offset))
+			 (- y (elt oport (1+ target-offset))))))))
+      (multiple-value-bind (x0 y0)
+	  (pos)
+	(multiple-value-bind (x1 y1)
+	    (pos)
+	  (values x0 y0 (- x1 x0) (- y1 y0)))))))
+
+(defun problem-1-controller (sim &optional (r (problem-1-target-radius sim)))
+  (multiple-value-bind (x y)
+      (position-and-direction sim)
+    (labels ((boost (speed)
+	       (let ((vec (vscale (multiple-value-bind (x y vx vy)
+				      (position-and-direction sim)
+				    (adjust-direction
+				     (calc-unit-tangent-vector (vec x y))
+				     (vec vx vy))) speed)))
+		 (sim-step sim (vx vec) (vy vec))))
+	     #+ignore
+	     (done? ()
+	       (destructuring-array-bind (score nil x1 y1) 
+		   (sim-step sim)
+		 (assert (zerop score))
+		 (let ((vx (- x1 x)) (vy (- y1 y)))
+		   (prog1 (/= (signum (- (d x1 y1) r))
+			      (signum (- (d (+ x1 (* 1 vx)) (+ y1 (* 1 vy))) r)))
+		     (setf x x1 y y1))))))
+      (multiple-value-bind (init-dv end-dv estimated-time)
+	  (hohmann (d x y) r)
+	(declare (ignorable end-dv))
+	(boost (- init-dv))
+	(loop repeat (round (- estimated-time 2))
+	      for output = (sim-step sim)
+	      ;; until (done?)
+	      finally (return output))
+	(multiple-value-bind (_ __ vx vy)
+	    (position-and-direction sim)
+	  (declare (ignorable _ __))
+	  (boost (- (d vx vy) (sqrt (/ +g-m-earth+ r)))))
+	(values (reverse (sim-thrusts sim)) (sim-time sim))))))
+
+(defun problem-1-controller-burn (sim &key (r (problem-1-target-radius sim)) (fuel 9000))
+  "This does not work
+
+To see the earth disappear
+
+ (visualise-scenario \"/home/john/Programs/dysfunkycom/orbit-code/bin1.obf\" 1004d0 :frames (let ((sim (make-simulator \"/home/john/Programs/dysfunkycom/orbit-code/bin1.obf\" 1004d0))) (problem-1-controller-burn sim)))
+"
+  (labels ((boost (speed &key (evx 0d0) (evy 0d0))
+	     (let ((vec (vscale (multiple-value-bind (x y vx vy)
+				    (position-and-direction sim)
+				  (adjust-direction
+				   (calc-unit-tangent-vector (vec x y))
+				   (vec vx vy))) speed)))
+	       (sim-step sim (+ (vx vec) evx) (+ (vy vec) evy))
+	       (values (vx vec) (vy vec))))
+	   (done? ()
+	     (destructuring-array-bind (score nil x y) 
+		 (sim-step sim)
+	       (assert (not (minusp score)))
+	       (approximately-equal
+		(d x y)
+		r
+		0.0001))))
+    (multiple-value-bind (x y)
+	(position-and-direction sim)
+      (multiple-value-bind (init-dv end-dv)
+	  (hohmann (d x y) r)
+	(let ((fuel-used (+ (abs init-dv) (abs end-dv))))
+	  (let ((extra (/ (- fuel fuel-used) 2)))
+	    (multiple-value-bind (vx vy)
+		(boost (- (+ extra init-dv)))
+	      (loop until (done?))
+	      (flet ((s (x)
+		       (/ (* -1 x (abs extra)) (abs (+ extra init-dv)))))
+		(boost (- end-dv) :evx (s vx) :evy (s vy)))))
+	  (values (reverse (sim-thrusts sim)) (sim-time sim)))))))
+	
+
+(defun estimate-real-orbital-period (sim)
+  (let ((t0 (sim-time sim)))
+      (multiple-value-bind (x0 y0)
+	  (position-and-direction sim)
+	(let ((a0 (angle x0 y0)))
+	  (labels (
+		   (norm (angle)
+		     angle)
+		   (before (x target)
+		     (plusp (- x target)))
+		   (wait-for-angle (target) 
+		     (let ((tar (norm target)))
+		       (loop 
+			     for last = nil then angle
+			     for angle = (destructuring-array-bind (score nil x y) 
+								   (sim-step sim)
+								   (assert (not (minusp score)))
+								   (norm (angle x y)))
+			     thereis (and last 
+					  (not (eq (before last tar) (before angle tar))))))))
+	    (wait-for-angle (+ a0 pi))
+	    (wait-for-angle a0))
+	  (- (sim-time sim) t0)))))
+
+(defun problem-2-calc-jump (sim)
+  (let ((target-radius (estimate-target-radius sim)))
+    (let ((tmpsim (copy-sim sim)))
+      (multiple-value-bind (x0 y0)
+	  (position-and-direction tmpsim)
+	(problem-1-controller tmpsim target-radius)
+	(multiple-value-bind (x1 y1)
+	    (position-and-direction tmpsim)
+	  (values
+	    (sim-time tmpsim)		; hohmann time
+	    (angle x0 y0)		; initial angle
+	    (angle x1 y1)		; final angle
+	    nil ;; (estimate-real-orbital-period tmpsim)
+	    target-radius		; target radius
+	    ))))))
+
+(defun problem-2-chaser (sim &key (range 500) (min-fuel 100))
+  (let ((ax 0d0) (ay 0d0))
+    (iter (for output = (sim-step sim ax ay))
+	  (setf ax 0d0 ay 0d0)
+	  (destructuring-array-bind (score fuel nil nil xo yo) output
+				    (until (plusp score))
+				    (let ((d (d xo yo)))
+				      (unless (> range d)
+					(setf ax (/ (- xo) d )
+					      ay (/ (- yo) d )))
+
+				      (when (>= (+ min-fuel (d ax ay)) fuel)
+					 (setf ax 0d0 ay 0d0))))))
+
+  (values (reverse (sim-thrusts sim)) (sim-time sim)))
+
+(defun problem-2-controller (sim)
+  (multiple-value-bind (x0 y0 vx0 vy0)
+      (position-and-direction-target sim)
+    (print (list x0 y0 vx0 vy0))
+    (multiple-value-bind (hohmann-time init-angle end-angle _ target-radius)
+	(problem-2-calc-jump sim)
+      (declare (ignorable _))
+      (print (list hohmann-time init-angle end-angle target-radius))
+      ;; 1. wait to the right position
+      (let* ((radius (d x0 y0))
+	     (angular-velocity (/ (norm (vec vx0 vy0)) radius))
+	     (triggering-angle 
+	      (normalize-angle
+	       (-
+		(- end-angle init-angle)
+		(* angular-velocity hohmann-time)))))
+	(iter (for output = (sim-step sim))
+	      (destructuring-array-bind (nil nil x y xo yo) output
+		(let ((angle-to-opponent
+		       (normalize-angle 
+			(calc-angle-between-vectors
+			 (vec x y)
+			 (vec (- x xo) (- y yo))))))
+		  (when (approximately-equal angle-to-opponent
+					     triggering-angle
+					     0.001)
+		    (leave))))))
+      (print (sim-time sim))
+      (print 'leave)
+      ;; 2. hohmann
+      (problem-1-controller sim target-radius)
+      (print (sim-time sim))
+      (print 'stay)
+      ;; 3. feedback loop for adjustment
+      (problem-2-chaser sim)
+      ;; return val
+      (values (reverse (sim-thrusts sim)) (sim-time sim)))))
+
+;;; previous implementation
+;;; not used now
+(defun hohmann-controller (sim)
   (let ((thrusts '())
 	(last-x 0d0)
 	(last-y 0d0)
-	(nruns 0))
+	(nruns 0)
+	(simulator (make-simple-simulator-func sim)))
     (handler-case
 	(labels ((run (simulator dVx dVy)
 		   (when (>= nruns *max-runs*)
@@ -84,7 +287,7 @@ Outputs: a list of double-floats
 	      (assert (not (minusp score))) 
 	      (let* ((r2 r)
 		     (r1 (sqrt (+ (* x x) (* y y))))
-		     (hohmann-result (hohmann r1 r2)))
+		     (hohmann-result (multiple-value-list (hohmann r1 r2))))
 		(format t "~&Result for Hohmann method: ~% - initial-dV-scalar = ~a, ~% - final-dV-scalar = ~a; ~% - estimated arrival time: ~a~%" (first hohmann-result) (second hohmann-result) (third hohmann-result))
 		;; initial impulse
 		(let* ((direction (adjust-direction
@@ -114,9 +317,11 @@ Outputs: a list of double-floats
 		      (destructuring-array-bind (score nil nil nil nil) output
 			(while (zerop score)))
 		      (finally
+		       (format t "~&Time spent: ~a seconds~%" (length thrusts))
 		       (format t "~&The final score is: ~a~%" (aref output 0))))
 		;; result
 		(nreverse thrusts)))))
       (error (c)
+	(format t "~&Time spent: ~a seconds~%" (length thrusts))
 	(format t "~&Satellite failed with program error: ~a~%" c) 
 	(nreverse thrusts)))))

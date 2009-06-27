@@ -29,7 +29,7 @@
        (lambda ()
 	 (pop satspos))))
 
-(defun make-visualise-oport (func &optional frames)
+(defun make-visualise-oport-1 (func &optional frames)
   (let ((time 0) (frame (pop frames)))
    (lambda ()
      (let ((ax 0d0) (ay 0d0))
@@ -46,13 +46,41 @@
 	 (when oport
 	   (destructuring-array-bind 
 	     (score fuel x y)
-	     (coerce oport 'list)
+	     oport
 	     (declare (ignore fuel))
 	     (check-type x double-float)
 	     
 	     (cond ((zerop score)
 		    (list (make-visat :name "dysfunc" :sx x :sy y)))
 		   (t 
+		    (format *debug-io* "Finishing because score is ~A~%" score)
+		    nil)))))))))
+
+(defun make-visualise-oport-2 (func &optional frames)
+  (let ((time 0) (frame (pop frames)))
+   (lambda ()
+     (let ((ax 0d0) (ay 0d0))
+       (when (and frame (= time (first frame)))
+	 (loop for (control val) in (rest frame)
+	       do (cond 
+		    ((= control 2) (setf ax val))
+		    ((= control 3) (setf ay val))
+		    (t (assert (= #x3e80 control))
+		       (assert (zerop time)))))
+	 (setf frame (pop frames)))
+       (let ((oport (funcall func ax ay)))
+	 (incf time)
+	 (when oport
+	   (destructuring-array-bind 
+	    (score fuel x y tx ty)
+	    oport
+	    (declare (ignore fuel))
+	    (check-type x double-float)
+	     
+	    (cond ((zerop score)
+		   (list (make-visat :name "dysfunc" :sx x :sy y)
+			 (make-visat :name "target" :sx (- x tx) :sy (- y ty) :color sdl:*green*)))
+		  (t 
 		    (format *debug-io* "Finishing because score is ~A~%" score)
 		    nil)))))))))
 
@@ -116,7 +144,7 @@
 		     (sdl:draw-filled-circle-* (xform-x (visat-sx visat)) (xform-y (visat-sy visat))
 					       visat-radius
 					       :color (visat-color visat))
-		     (visualise-draw-text (format nil "~A ~A" (visat-name visat) (d (visat-sx visat) (visat-sy visat)))
+		     (visualise-draw-text (format nil "~A ~,3E" (visat-name visat) (d (visat-sx visat) (visat-sy visat)))
 					  :x (xform-x (visat-sx visat)) :y (xform-y (visat-sy visat))
 					  :fg-color (sdl:any-color-but-this (visat-color visat))
 					  :bg-color (visat-color visat))
@@ -138,18 +166,19 @@
 	  (:quit-event () t)
 	  (:key-down-event
 	    (:key key)
-	    (cond ((sdl:key= key :sdl-key-escape) (sdl:push-quit-event))
-		  ((sdl:key= key :sdl-key-q) (skip-frames 100))
-		  ((sdl:key= key :sdl-key-w) (skip-frames 500))
-		  ((sdl:key= key :sdl-key-e) (skip-frames 1000))
-		  ((sdl:key= key :sdl-key-r) (skip-frames 5000))
-		  ((sdl:key= key :sdl-key-t) (skip-frames 10000))
-		  ((sdl:key= key :sdl-key-y) (skip-frames 50000))
-		  ((sdl:key= key :sdl-key-space)
-		   (setf playing (not playing)))
-		  (t 	
-		   (next-step)
-		   (draw))))
+	    (cond 
+	      ((sdl:key= key :sdl-key-escape) (sdl:push-quit-event))
+	      ((sdl:key= key :sdl-key-q) (skip-frames 100))
+	      ((sdl:key= key :sdl-key-w) (skip-frames 500))
+	      ((sdl:key= key :sdl-key-e) (skip-frames 1000))
+	      ((sdl:key= key :sdl-key-r) (skip-frames 5000))
+	      ((sdl:key= key :sdl-key-t) (skip-frames 10000))
+	      ((sdl:key= key :sdl-key-y) (skip-frames 50000))
+	      ((sdl:key= key :sdl-key-space)
+	       (setf playing (not playing)))
+	      (t 	
+	       (next-step)
+	       (draw))))
 	  (:video-expose-event () (sdl:update-display))
 	  (:idle ()
 		 (when playing
@@ -158,6 +187,32 @@
 	       
 
 
-(defun visualise-scenario (file scenario)
-  (visualise
-   (make-visualise-oport (make-simulator file scenario) (thrusts->frames scenario (hohmann-controller (make-simulator file scenario))))))
+(defun controller-for-scenario (scenario)
+  (cond ((> 2000 scenario) 
+	 'problem-1-controller)
+	(t
+	 'problem-2-controller)))
+
+(defun visualiser-for-scenario (scenario)
+  (cond ((> 2000 scenario) 
+	 'make-visualise-oport-1)
+	(t
+	 'make-visualise-oport-2)))
+
+(defvar *orbit-code-dir* 
+  (with-standard-io-syntax (format nil "~A/../orbit-code/"  
+				   #.(directory-namestring *compile-file-truename*))))
+
+
+(defun file-for-scenario (scenario)
+  (merge-pathnames
+   (with-standard-io-syntax (format nil "bin~D.obf" (floor (/ scenario 1000))))
+   *orbit-code-dir*))
+
+(defun visualise-scenario (scenario &key frames (controller (controller-for-scenario scenario)) 
+			   (visualiser-func (visualiser-for-scenario scenario)) (file (file-for-scenario scenario)))
+  (let ((scenario (coerce scenario 'double-float)))
+   (let ((sim (make-simulator file scenario)))
+     (visualise
+      (funcall visualiser-func (make-simple-simulator-func sim) (or frames (when controller (funcall controller (copy-sim sim)))))))))
+
