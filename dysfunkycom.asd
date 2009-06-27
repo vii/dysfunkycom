@@ -22,7 +22,7 @@
 				     (:file "macros" :depends-on ("package"))
 				     (:file "physics" :depends-on ("constants"))
 				     (:file "submission" :depends-on ("constants"))
-				     (:file "control" :depends-on ("physics"))
+				     (:file "control" :depends-on ("physics" "macros"))
 				     )))
 
   :depends-on (
