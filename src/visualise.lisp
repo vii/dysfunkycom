@@ -149,4 +149,4 @@
 
 (defun visualise-scenario (file scenario)
   (visualise
-   (make-visualise-oport (make-controller file scenario) (thrusts->frames scenario (hohmann-controller (make-simulator file scenario))))))
+   (make-visualise-oport (make-simulator file scenario) (thrusts->frames scenario (hohmann-controller (make-simulator file scenario))))))
