@@ -56,3 +56,7 @@
   (and (< (abs (/ (- x y) x)) error-toleration)
        (< (abs (/ (- x y) y)) error-toleration)))
 
+
+(declaim (inline d))
+(defun d (x y)
+  (sqrt (+ (^2 x) (^2 y))))
