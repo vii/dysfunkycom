@@ -84,7 +84,9 @@ Outputs: a list of double-floats
 	(let ((a0 (angle x0 y0)))
 	  (labels (
 		   (norm (angle)
-		     (- (mod angle (* 2 pi)) pi))
+		     (- (mod (- angle a0) (* 2 pi)) pi))
+		   (before (x target)
+		     (plusp (norm (- x target))))
 		   (wait-for-angle (target) 
 		     (let ((tar (norm target)))
 		       (loop 
@@ -94,7 +96,7 @@ Outputs: a list of double-floats
 								   (assert (not (minusp score)))
 								   (norm (angle x y)))
 			     thereis (and last 
-					  (/= (signum (norm (- last tar))) (signum (norm (- angle tar)))))))))
+					  (not (eq (before last tar) (before angle tar))))))))
 	    (wait-for-angle (+ a0 pi))
 	    (wait-for-angle a0))
 	  (- (sim-time sim) t0 )))))
