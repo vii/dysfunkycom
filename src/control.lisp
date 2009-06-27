@@ -80,7 +80,7 @@ Outputs: a list of double-floats
 	       (approximately-equal
 		(d x y)
 		r
-		0.0000001))))
+		0.000001))))
     (multiple-value-bind (x y)
 	(position-and-direction sim)
       (multiple-value-bind (init-dv end-dv)
@@ -170,7 +170,7 @@ To see the earth disappear
 
 (defun problem-2-controller (sim)
   (multiple-value-bind (x0 y0 vx0 vy0)
-      (position-and-direction sim)
+      (position-and-direction-target sim)
     (multiple-value-bind (hohmann-time init-angle end-angle _ target-radius)
 	(problem-2-calc-jump sim)
       (declare (ignorable _))
@@ -179,8 +179,7 @@ To see the earth disappear
 	     (angular-velocity (/ (norm (vec vx0 vy0)) radius))
 	     (period (orbital-period radius)) ; TODO: check period and hohmann-time
 	     (triggering-angle (normalize-angle
-				(- (normalize-angle
-				    (- end-angle init-angle))
+				(- (- end-angle init-angle)
 				   (* angular-velocity hohmann-time)))))
 	(iter (for output = (sim-step sim))
 	      (destructuring-array-bind (nil nil x y xo yo) output
@@ -188,11 +187,11 @@ To see the earth disappear
 		       (normalize-angle
 			(calc-angle-between-vectors
 			 (vec x y)
-			 (vec xo yo)))))
-		  (when (approximately-equal angle-to-opponent
-					     triggering-angle
-					     0.00001) ;TODO: tune epsilon
+			 (vec (- xo x) (- yo y))))))
+
+		  (when (> 0.0001 (abs (- angle-to-opponent triggering-angle)))
 		    (leave))))))
+
       ;; 2. hohmann
       (problem-1-controller sim target-radius))))
 
