@@ -92,9 +92,12 @@
 (defun test-run (filename scenario)
   (multiple-value-bind (program initial-data) (load-program filename)
     (let ((memory (copy-seq initial-data))
-	  (input-port (make-array (ash 1 14) :element-type 'double-float))
-	  (output-port (make-array (ash 1 14) :element-type 'double-float)))
+	  (input-port (make-array (ash 1 14) :element-type 'double-float
+				  :initial-element 0d0))
+	  (output-port (make-array (ash 1 14) :element-type 'double-float
+				   :initial-element 0d0)))
       (setf (elt input-port #x3e80) scenario)
-      (funcall (eval program) memory input-port output-port))))
+      (funcall (eval program) memory input-port output-port)
+      memory)))
 
 ;;; (test-run "bin1.obf" 1001d0)
