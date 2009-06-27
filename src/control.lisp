@@ -79,27 +79,27 @@ Outputs: a list of double-floats
 
 (defun estimate-real-orbital-period (sim)
   (let ((t0 (sim-time sim)))
-    (multiple-value-bind (x0 y0)
-	(position-and-direction sim)
-      (let ((a0 (angle x0 y0)))
-	(labels (
-		 (norm (angle)
-		   (- (mod (- angle a0) (* 2 pi)) pi))
-		 (before (x target)
-		   (plusp (norm (- x target))))
-		 (wait-for-angle (target) 
-		   (let ((tar (norm target)))
-		     (loop 
-		       for last = nil then angle
-		       for angle = (destructuring-array-bind (score nil x y) 
-				       (sim-step sim)
-				     (assert (not (minusp score)))
-				     (norm (angle x y)))
-		       thereis (and last 
-				    (not (eq (before last tar) (before angle tar))))))))
-	  (wait-for-angle (+ a0 pi))
-	  (wait-for-angle a0))
-	(- (sim-time sim) t0 )))))
+      (multiple-value-bind (x0 y0)
+	  (position-and-direction sim)
+	(let ((a0 (angle x0 y0)))
+	  (labels (
+		   (norm (angle)
+		     angle)
+		   (before (x target)
+		     (plusp (- x target)))
+		   (wait-for-angle (target) 
+		     (let ((tar (norm target)))
+		       (loop 
+			     for last = nil then angle
+			     for angle = (destructuring-array-bind (score nil x y) 
+								   (sim-step sim)
+								   (assert (not (minusp score)))
+								   (norm (angle x y)))
+			     thereis (and last 
+					  (not (eq (before last tar) (before angle tar))))))))
+	    (wait-for-angle (+ a0 pi))
+	    (wait-for-angle a0))
+	  (- (sim-time sim) t0)))))
 
 (defun problem-2-calc-jump (sim)
   (let ((target-radius (estimate-target-radius sim)))
