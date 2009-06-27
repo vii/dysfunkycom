@@ -72,15 +72,15 @@
 	 (incf time)
 	 (when oport
 	   (destructuring-array-bind 
-	     (score fuel x y tx ty)
-	     oport
-	     (declare (ignore fuel))
-	     (check-type x double-float)
+	    (score fuel x y tx ty)
+	    oport
+	    (declare (ignore fuel))
+	    (check-type x double-float)
 	     
-	     (cond ((zerop score)
-		    (list (make-visat :name "dysfunc" :sx x :sy y)
-			  (make-visat :name "target" :sx (- tx x) :sy (- ty y) :color sdl:*green*)))
-		   (t 
+	    (cond ((zerop score)
+		   (list (make-visat :name "dysfunc" :sx x :sy y)
+			 (make-visat :name "target" :sx (- tx x) :sy (- ty y) :color sdl:*green*)))
+		  (t 
 		    (format *debug-io* "Finishing because score is ~A~%" score)
 		    nil)))))))))
 

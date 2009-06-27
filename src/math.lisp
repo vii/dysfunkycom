@@ -60,3 +60,7 @@
 (declaim (inline d))
 (defun d (x y)
   (sqrt (+ (^2 x) (^2 y))))
+
+(declaim (inline angle))
+(defun angle (x y)
+  (atan y x))

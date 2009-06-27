@@ -27,9 +27,9 @@ Outputs: a list of double-floats
 	 (* pi
 	    (sqrt (/ (expt (+ r1 r2) 3)
 		     (* 8d0 +g-m-earth+))))))
-    (list initial-delta-v
-	  final-delta-v
-	  estimated-time)))
+    (values initial-delta-v
+	    final-delta-v
+	    estimated-time)))
 
 (defun estimate-target-radius (sim)
   (let ((simulator (make-simple-simulator-func (copy-sim sim))))
@@ -38,9 +38,86 @@ Outputs: a list of double-floats
 				output
 				(d (- tx x) (- ty y))))))
 
-(defun problem-2-controller (sim)
+(defun problem-1-target-radius (sim)
+  (let ((simulator (make-simple-simulator-func (copy-sim sim))))
+    (destructuring-array-bind (nil nil nil nil r)
+			      (funcall simulator)
+			      r)))
+
+(defun position-and-direction (sim)
+  (let ((simulator (make-simple-simulator-func (copy-sim sim))))
+    (destructuring-array-bind (nil nil x0 y0)
+			      (funcall simulator)
+			      (destructuring-array-bind (nil nil x1 y1)
+							(funcall simulator)
+							(values x0 y0 (- x1 x0) (- y1 y0))))))
+
+(defun problem-1-controller (sim &optional (r (problem-1-target-radius sim)))
+    (labels ((boost (speed)
+	       (let ((vec (vscale (multiple-value-bind (x y vx vy)
+				      (position-and-direction sim)
+				    (adjust-direction
+				     (calc-unit-tangent-vector (vec x y))
+				     (vec vx vy))) speed)))
+		 (sim-step sim (vx vec) (vy vec))))
+	     (done? ()
+	       (destructuring-array-bind (score nil x y) 
+					 (sim-step sim)
+					 (assert (not (minusp score)))
+					 (approximately-equal
+					  (d x y)
+					  r
+					  0.0000001))))
+      (multiple-value-bind (x y)
+	  (position-and-direction sim)
+	(multiple-value-bind (init-dv end-dv)
+	    (hohmann (d x y) r)
+	  (boost (- init-dv))
+	  (loop until (done?))
+	  (boost (- end-dv))
+	  (values (sim-thrusts sim) (sim-time sim))))))
+
+(defun estimate-real-orbital-period (sim)
+  (let ((t0 (sim-time sim)))
+      (multiple-value-bind (x0 y0)
+	  (position-and-direction sim)
+	(let ((a0 (angle x0 y0)))
+	  (labels (
+		   (norm (angle)
+		     (- (mod angle (* 2 pi)) pi))
+		   (wait-for-angle (target) 
+		     (let ((tar (norm target)))
+		       (loop 
+			     for last = nil then angle
+			     for angle = (destructuring-array-bind (score nil x y) 
+								   (sim-step sim)
+								   (assert (not (minusp score)))
+								   (norm (angle x y)))
+			     thereis (and last 
+					  (/= (signum (norm (- last tar))) (signum (norm (- angle tar)))))))))
+	    (wait-for-angle (+ a0 pi))
+	    (wait-for-angle a0))
+	  (- (sim-time sim) t0 )))))
+
+(defun problem-2-calc-jump (sim)
   (let ((target-radius (estimate-target-radius sim)))
-    target-radius))
+    (let ((tmpsim (copy-sim sim)))
+      (multiple-value-bind (x0 y0)
+	  (position-and-direction tmpsim)
+       (problem-1-controller tmpsim target-radius)
+       (multiple-value-bind (x1 y1)
+	   (position-and-direction tmpsim)
+	 (values
+	  (sim-time tmpsim)
+	  (angle x0 y0)
+	  (angle x1 y1)
+	  (estimate-real-orbital-period tmpsim)
+	  target-radius))))))
+
+
+
+(defun problem-2-controller (sim)
+  )
 
 (defun hohmann-controller (sim)
   (let ((thrusts '())
@@ -96,7 +173,7 @@ Outputs: a list of double-floats
 	      (assert (not (minusp score))) 
 	      (let* ((r2 r)
 		     (r1 (sqrt (+ (* x x) (* y y))))
-		     (hohmann-result (hohmann r1 r2)))
+		     (hohmann-result (multiple-value-list (hohmann r1 r2))))
 		(format t "~&Result for Hohmann method: ~% - initial-dV-scalar = ~a, ~% - final-dV-scalar = ~a; ~% - estimated arrival time: ~a~%" (first hohmann-result) (second hohmann-result) (third hohmann-result))
 		;; initial impulse
 		(let* ((direction (adjust-direction

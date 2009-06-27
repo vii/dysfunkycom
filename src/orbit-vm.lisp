@@ -152,6 +152,8 @@
   memory
   input-port
   output-port
+  thrusts
+  (time 0)
   )
 
 (defun copy-sim (sim)
@@ -159,7 +161,9 @@
    :program (sim-program sim)
    :memory (copy-seq (sim-memory sim))
    :input-port (copy-seq (sim-input-port sim))
-   :output-port (copy-seq (sim-output-port sim))))
+   :output-port (copy-seq (sim-output-port sim))
+   :thrusts (copy-seq (sim-thrusts sim))
+   :time (sim-time sim)))
 
 (defun make-simulator (filename scenario)
   (multiple-value-bind (program initial-data) (load-program filename)
@@ -173,14 +177,20 @@
 		:output-port output-port
 		:memory memory))))
 
+(defun sim-step (sim &optional (ax 0d0) (ay 0d0))
+  (with-slots (program memory input-port output-port thrusts time)
+      sim
+    (setf (elt input-port 2) ax
+	  (elt input-port 3) ay)
+    (unless (and (zerop ax) (zerop ay))
+      (push `(,time ,@(unless (zerop ax) `((2 ,ax))) ,@(unless (zerop ay) `((3 ,ay)))) thrusts))
+    (funcall program memory input-port output-port)
+    (incf time)
+    output-port))
+
 (defun make-simple-simulator-func (sim)
   (lambda (&optional (ax 0d0) (ay 0d0))
-    (with-slots (program memory input-port output-port)
-	sim
-      (setf (elt input-port 2) ax
-	    (elt input-port 3) ay)
-      (funcall program memory input-port output-port)
-      output-port)))
+    (sim-step sim ax ay)))
 
 
 
