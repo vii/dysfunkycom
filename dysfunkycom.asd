@@ -15,13 +15,17 @@
 	       (:module :src
 			:components (
 				     (:file "package")
-				     (:file "simulate" :depends-on ("package"))
-				     (:file "visualise" :depends-on ("package")))))
+				     #-darwin (:file "visualise" :depends-on ("package"))
+				     (:file "orbit-vm" :depends-on ("package"))
+				     (:file "constants" :depends-on ("package"))
+				     (:file "physics" :depends-on ("constants"))
+				     )))
 
   :depends-on (
 	       :iterate
 	       :alexandria
 	       :cl-fad
-	       :lispbuilder-sdl))
+	       #-darwin :lispbuilder-sdl
+	       :ieee-floats))
 
 

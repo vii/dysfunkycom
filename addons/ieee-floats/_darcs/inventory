@@ -1,0 +1,18 @@
+[initial import
+marijnh@gmail.com**20061211034318] 
+[properly encode and decode numbers with exponent 0
+marijnh@gmail.com**20061214015939] 
+[add documentation to repo
+marijnh@gmail.com**20061214020324] 
+[leave evaluation of (byte ...) forms to run-time to be compatible with implementations that do not evaluate them to lists
+marijnh@gmail.com**20061214035706] 
+[add darcsweb link to doc
+marijnh@gmail.com**20061214043419] 
+[adjust tests to older versions of fiveam and to clisp
+marijnh@gmail.com**20061218050154] 
+[add author name to docs
+marijnh@gmail.com**20070904142650] 
+[fix html error in docs
+marijnh@gmail.com**20080428102340] 
+[mention license style in docs
+marijnh@gmail.com**20080430110556] 

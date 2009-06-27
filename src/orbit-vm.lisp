@@ -1,4 +1,4 @@
-(in-package :dysfunkycom)
+(in-package #:dysfunkycom)
 
 (defun compile-instruction (insn rd)
   (declare (type (unsigned-byte 32) insn)
