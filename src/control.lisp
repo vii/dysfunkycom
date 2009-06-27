@@ -1,6 +1,7 @@
 (in-package :dysfunkycom)
 
 (defparameter *trace-simulation-outputs* nil)
+(defparameter *max-runs* 3000000)
 
 (defun hohmann (r1 r2)
   "Inputs:
@@ -33,9 +34,13 @@ Outputs: a list of double-floats
 (defun hohmann-controller (simulator)
   (let ((thrusts '())
 	(last-x 0d0)
-	(last-y 0d0))
+	(last-y 0d0)
+	(nruns 0))
     (handler-case
 	(labels ((run (simulator dVx dVy)
+		   (when (> nruns *max-runs*)
+		     (error "Too many simulations!"))
+		   (incf nruns)
 		   (push (list dVx dVy) thrusts)
 		   (let ((output (funcall simulator dVx dVy)))
 		     (when *trace-simulation-outputs*
