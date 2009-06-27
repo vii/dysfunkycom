@@ -33,12 +33,13 @@
   (let ((time 0) (frame (pop frames)))
    (lambda ()
      (let ((ax 0d0) (ay 0d0))
-       (when (= time (first frame))
+       (when (and frame (= time (first frame)))
 	 (loop for (control val) in (rest frame)
-	       do (cond ((= control 2) (setf ax val))
-			((= control 3) (setf ay val))
-			(t (assert (= #x3e80 control))
-			   (assert (zerop time)))))
+	       do (cond 
+		    ((= control 2) (setf ax val))
+		    ((= control 3) (setf ay val))
+		    (t (assert (= #x3e80 control))
+		       (assert (zerop time)))))
 	 (setf frame (pop frames)))
        (let ((oport (funcall func ax ay)))
 	 (incf time)
@@ -65,9 +66,9 @@
 
 (defun visualise (func &key (earth-color (sdl:color :r 20 :g 100 :b 100)) 
 		  (earth-radius +radius-earth+) (visat-radius 10)
-		  (window-width 1000) (window-height 1000))
+		  (window-width 1000) (window-height 1000) (playing-steps 100))
   (declare (optimize debug safety))
-  (let* (satspos (time 0) (scale (* 2 +radius-earth+)))
+  (let* (satspos (time 0) (scale (* 2 +radius-earth+)) playing)
     (labels (
 	     (rescale ()
 	       (labels ((max-one (func)
@@ -77,7 +78,7 @@
 			      (with-gensyms (real-scale)
 				`(let ((,real-scale (coerce (max-one ,func) 'double-float)))
 				   (if (or (> ,var (* 4 ,real-scale))
-					   (< ,var (* 1 ,real-scale)))
+					   (< ,var (* 2 ,real-scale)))
 				       (+ 1 (* 3 ,real-scale))
 				       ,var)))))
 		   (setf scale (max (maybe-scale scale #'visat-sx) (maybe-scale scale #'visat-sy))))))
@@ -91,12 +92,15 @@
 	       (round (let ((dim (max (sdl:width sdl:*default-display*) (sdl:height sdl:*default-display*))))
 			(* (/ r scale 2) dim))))
 	     (next-step ()
+	       (loop repeat (if playing playing-steps 1) do
+		     (one-step)))
+	     (one-step ()
 	       (setf satspos (funcall func))
 	       (unless satspos
 		 (return-from visualise time))
 	       (incf time))
 	     (skip-frames (n)
-	       (loop repeat n do (next-step)))
+	       (loop repeat n do (one-step)))
 	     (crashing-into-earth ()
 	       (iter (for visat in satspos)
 		     (thereis (>= (* 1.01d0 (^2 +radius-earth+))
@@ -112,7 +116,7 @@
 		     (sdl:draw-filled-circle-* (xform-x (visat-sx visat)) (xform-y (visat-sy visat))
 					       visat-radius
 					       :color (visat-color visat))
-		     (visualise-draw-text (format nil "~A" (visat-name visat))
+		     (visualise-draw-text (format nil "~A ~A" (visat-name visat) (d (visat-sx visat) (visat-sy visat)))
 					  :x (xform-x (visat-sx visat)) :y (xform-y (visat-sy visat))
 					  :fg-color (sdl:any-color-but-this (visat-color visat))
 					  :bg-color (visat-color visat))
@@ -130,10 +134,9 @@
 
 	;; Enable key repeat. Set to default values.
 	(sdl:enable-key-repeat nil nil)
-	(let (playing)
-	 (sdl:with-events ()
-	   (:quit-event () t)
-	   (:key-down-event
+	(sdl:with-events ()
+	  (:quit-event () t)
+	  (:key-down-event
 	    (:key key)
 	    (cond ((sdl:key= key :sdl-key-escape) (sdl:push-quit-event))
 		  ((sdl:key= key :sdl-key-q) (skip-frames 100))
@@ -143,15 +146,15 @@
 		  ((sdl:key= key :sdl-key-t) (skip-frames 10000))
 		  ((sdl:key= key :sdl-key-y) (skip-frames 50000))
 		  ((sdl:key= key :sdl-key-space)
-		    (setf playing (not playing)))
+		   (setf playing (not playing)))
 		  (t 	
 		   (next-step)
 		   (draw))))
-	   (:video-expose-event () (sdl:update-display))
-	   (:idle ()
-		  (when playing
-		    (next-step))
-		  (draw))))))))
+	  (:video-expose-event () (sdl:update-display))
+	  (:idle ()
+		 (when playing
+		   (next-step))
+		 (draw)))))))
 	       
 
 
