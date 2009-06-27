@@ -15,6 +15,8 @@
 	       (:module :src
 			:components (
 				     (:file "package")
+				     (:file "matrix")
+				     (:file "lu" :depends-on ("matrix"))
 				     #-darwin (:file "visualise" :depends-on ("physics" "macros"))
 				     (:file "orbit-vm" :depends-on ("package"))
 				     (:file "constants" :depends-on ("package"))

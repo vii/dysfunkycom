@@ -63,3 +63,8 @@ Example:
   (with-open-file (s filename :direction :output :if-exists :supersede
 		     :element-type '(unsigned-byte 8))
     (write-sequence (submission scenario (thrusts->frames scenario thrusts)) s)))
+
+;;; Submission example:
+;;; (hohmann-controller (make-simulator "bin1.obf" 1004d0))
+;;; => a lot of thrust data...
+;;; (write-submission 1004d0 (rest *) "dysfunkycom/submissions/1004.1")

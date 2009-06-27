@@ -60,3 +60,25 @@
 (declaim (inline d))
 (defun d (x y)
   (sqrt (+ (^2 x) (^2 y))))
+
+(defun estimate-ellipse (xy-pairs)
+  "This function needs at least 7 pairs, the more the better \(and the slower)."
+  (let* ((n (length xy-pairs))
+	 (A (make-array (list n 5) :element-type 'double-float))
+	 (b (make-array (list n 1) :element-type 'double-float :initial-element 1d0)))
+    (iter (for i upfrom 0)
+	  (for (x y) in xy-pairs)
+	  (mapc (lambda (j v) (setf (aref A i j) v))
+		'(0 1 2 3 4) (list (* x x) (* x y) (* y y) x y)))
+    (lu-solver:least-squares A b)))
+
+(defun generate-ellipse-test-points (center a b phi n)
+  "Generates N points."
+  (iter (repeat n)
+	(for alpha = (random (* 2 pi)))
+	(collect (list (+ (first center)
+			  (* a (cos alpha) (cos phi))
+			  (- (* b (sin alpha) (sin phi))))
+		       (+ (second center)
+			  (* a (cos alpha) (sin phi))
+			  (* b (sin alpha) (cos phi)))))))
