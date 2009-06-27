@@ -19,6 +19,7 @@
 				     (:file "orbit-vm" :depends-on ("package"))
 				     (:file "constants" :depends-on ("package"))
 				     (:file "physics" :depends-on ("constants"))
+				     (:file "submission" :depends-on ("constants"))
 				     )))
 
   :depends-on (
