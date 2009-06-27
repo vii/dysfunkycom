@@ -88,7 +88,7 @@ Outputs: a list of double-floats
 		(format t "~&Result for Hohmann method: ~% - initial-dV = ~a, ~% - final-dV = ~a; ~% - estimated arrival time: ~a~%" init-dV final-dV (third result))
 		;; initial impulse
 		(format t "~&Give initial impulse: (~a, ~a)~%" (vx init-dV) (vy init-dV))
-		(run simulator (vx init-dV) (- (vy init-dV)))
+		(run simulator (- (vx init-dV)) (- (vy init-dV)))
 		;; wait until reach perigee
 		(iter (for output = (run simulator 0d0 0d0))
 		      (when *trace-simulation-outputs*
@@ -98,7 +98,8 @@ Outputs: a list of double-floats
 		      (until (done-p output)))
 		;; final impulse
 		(format t "~&Give final impulse: (~a, ~a)~%" (vx final-dV) (vy final-dV))
-		(run simulator (vx final-dV) (vy final-dV))))))
+		(run simulator (- (vx final-dV)) (- (vy final-dV)))
+		(nreverse thrusts)))))
       (error (c)
 	(format t "~&Satellite failed with program error: ~a~%" c)
 	(nreverse thrusts)))))
