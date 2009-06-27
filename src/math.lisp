@@ -61,8 +61,11 @@
 (defun d (x y)
   (sqrt (+ (^2 x) (^2 y))))
 
+
+;;; Ellipse fitting
+
 (defun estimate-ellipse (xy-pairs)
-  "This function needs at least 7 pairs, the more the better \(and the slower)."
+  "This function needs at least 6 pairs, the more the better \(and the slower)."
   (let* ((n (length xy-pairs))
 	 (A (make-array (list n 5) :element-type 'double-float))
 	 (b (make-array (list n 1) :element-type 'double-float :initial-element 1d0)))
@@ -72,13 +75,49 @@
 		'(0 1 2 3 4) (list (* x x) (* x y) (* y y) x y)))
     (lu-solver:least-squares A b)))
 
+;;; Commented lines are for reverse rotation
+(defun rotate-vector (vec alpha)
+  (let ((x (first vec)) (y (second vec))
+	(c (cos alpha)) (s (sin alpha)))
+;;     (list (+ (* c x) (* s y)) (- (* c y) (* s x)))
+    (list (- (* c x) (* s y)) (+ (* s x) (* c y)))
+    ))
+
+;;; Commented lines are for reverse rotation
+(defun ellipse-from-quadratic (coefficients)
+  (destructuring-bind (a b c d e) (coerce coefficients 'list)
+    (flet ((ellipse (a c d e phi)
+	     (let ((f (+ 1 (/ (* d d) (* 4 a)) (/ (* e e) (* 4 c)))))
+	       (list (rotate-vector (list (/ d (* -2 a)) (/ e (* -2 c))) phi)
+		     (sqrt (abs (/ f a))) (sqrt (abs (/ f c))) phi))))
+      (if (< (min (abs (/ b a)) (abs (/ b c))) 1d-5)
+	  (ellipse a c d e 0d0)
+	  (let* (
+;; 		 (phi (/ (atan b (- c a)) 2))
+		 (phi (/ (atan b (- a c)) 2))
+		 (cos (cos phi))
+		 (sin (sin phi))
+;; 		 (a (+ (* a cos cos) (- (* b cos sin)) (* c sin sin)))
+;; 		 (c (+ (* a sin sin) (* b cos sin) (* c cos cos)))
+;; 		 (d (- (* d cos) (* e sin)))
+;; 		 (e (+ (* d sin) (* e cos)))
+		 (a (+ (* a cos cos) (* b cos sin) (* c sin sin)))
+		 (c (+ (* a sin sin) (- (* b cos sin)) (* c cos cos)))
+		 (d (+ (* e sin) (* d cos)))
+		 (e (- (* e cos) (* d sin)))
+		 )
+	    (ellipse a c d e phi))))))
+
+(defun ellipse-point (center a b phi angle)
+  (list (+ (first center)
+	   (* a (cos angle) (cos phi))
+	   (- (* b (sin angle) (sin phi))))
+	(+ (second center)
+	   (* a (cos angle) (sin phi))
+	   (* b (sin angle) (cos phi)))))
+
 (defun generate-ellipse-test-points (center a b phi n)
-  "Generates N points."
+  "Generates N random ellipse points."
   (iter (repeat n)
 	(for alpha = (random (* 2 pi)))
-	(collect (list (+ (first center)
-			  (* a (cos alpha) (cos phi))
-			  (- (* b (sin alpha) (sin phi))))
-		       (+ (second center)
-			  (* a (cos alpha) (sin phi))
-			  (* b (sin alpha) (cos phi)))))))
+	(collect (ellipse-point center a b phi alpha))))
