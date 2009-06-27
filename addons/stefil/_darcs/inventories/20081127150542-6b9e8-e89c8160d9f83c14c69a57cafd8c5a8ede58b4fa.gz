@@ -1,0 +1,137 @@
+Starting with tag:
+[TAG 2007-03-22
+attila.lendvai@gmail.com**20070323121624] 
+[Added with-fixtures
+attila.lendvai@gmail.com**20070329214519] 
+[Make fixtures smarter, they can be properly nested now
+attila.lendvai@gmail.com**20070329214559] 
+[No need to inspect the time spent as a value
+attila.lendvai@gmail.com**20070329214640] 
+[Added funcall-test-with-feedback-message
+attila.lendvai@gmail.com**20070401120820] 
+[Added style warning about possibly messed up packages/suites
+attila.lendvai@gmail.com**20070401124621] 
+[Rename test.lisp to stefil.lisp
+attila.lendvai@gmail.com**20070410132835] 
+[cosmetics
+attila.lendvai@gmail.com**20070410132856] 
+[FIX: do not warn for tests with uninterned symbols
+attila.lendvai@gmail.com**20070410132910] 
+[Follow bind changes
+attila.lendvai@gmail.com**20070413085554] 
+[Oops, one more thing for the bind cleanup
+attila.lendvai@gmail.com**20070413094446] 
+[Properly set up swank:*readtable-alist*
+attila.lendvai@gmail.com**20070414093005] 
+[Ensure a global-context in with-fixture, so using it in the repl keeps the nesting feature of fixtures
+attila.lendvai@gmail.com**20070414093835] 
+[Only record real errors, serious-condition's are not recorded
+attila.lendvai@gmail.com**20070419140146] 
+[Make sure restarts are properly installed when rerunning failed tests using with-toplevel-restarts
+attila.lendvai@gmail.com**20070424131014] 
+[Refactor/cleanup lambda list parsing
+attila.lendvai@gmail.com**20070424131134] 
+[Print the number of failed tests in the inspector
+attila.lendvai@gmail.com**20070424131156] 
+[Added tests for lambda list processing
+attila.lendvai@gmail.com**20070424131223] 
+[Reorder some definitions to get rid of warnings
+attila.lendvai@gmail.com**20070425104013] 
+[Suites can have arguments now, cleanup def/in-suite, removed in-suite*
+attila.lendvai@gmail.com**20070425104055
+ 
+ A defsuite is really a deftest now with a RUN-CHILD-TESTS flet inside it and
+ its args are &optional.
+] 
+[FIX: the abort the test session restart properly records the current failure
+attila.lendvai@gmail.com**20070502163255] 
+[Added todo note
+attila.lendvai@gmail.com**20070504132901] 
+[Delete unwind-protect sillyness in run-test-body-in-handlers
+attila.lendvai@gmail.com**20070504132909] 
+[Added without-test-progress-printing
+attila.lendvai@gmail.com**20070520110031] 
+[Skip keyword arguments in IS forms.
+levente.meszaros@gmail.com**20070810114234] 
+[housekeeping
+attila.lendvai@gmail.com**20070821233435] 
+[added integration dir
+attila.lendvai@gmail.com**20071102090856] 
+[fix loading with official slime
+attila.lendvai@gmail.com**20071110125205] 
+[add a newline after the funcall-test-with-feedback-message's message
+attila.lendvai@gmail.com**20071110131425] 
+[use a defvar to *tests* so reloading stefil does not clear the repository
+attila.lendvai@gmail.com**20071110131841] 
+[moved define-dynamic-context into duplicates.lisp
+attila.lendvai@gmail.com**20071121144151] 
+[drop in-global-context and in-context usage
+attila.lendvai@gmail.com**20071121150930] 
+[added with-expected-failures
+attila.lendvai@gmail.com**20080220175942] 
+[drop remf-keywords, use one from alexandria
+attila.lendvai@gmail.com**20080303000711] 
+[follow bind :values changes
+attila.lendvai@gmail.com**20080316201645] 
+[extend with-expected-failures to errors, too
+attila.lendvai@gmail.com**20080319232209] 
+[lambda parsing stuff does not depend on anything now so that you can copy/paste it into duplicate.lisp's
+attila.lendvai@gmail.com**20080320233654] 
+[wording
+attila.lendvai@gmail.com**20080323150909] 
+[smarted lambda-list parsing
+attila.lendvai@gmail.com**20080403150028] 
+[update tests
+attila.lendvai@gmail.com**20080403150034] 
+[extend lambda-list parsing a bit
+attila.lendvai@gmail.com**20080408103629] 
+[some lambda list tests
+attila.lendvai@gmail.com**20080408103800] 
+[todo
+attila.lendvai@gmail.com**20080408103811] 
+[oops, fix tests
+attila.lendvai@gmail.com**20080408104335] 
+[smarter error for singals
+attila.lendvai@gmail.com**20080519115839] 
+[Fix signals error did not print progress mark.
+levente.meszaros@gmail.com**20070821120725] 
+[a bit smarter lambda parsing, added lambda-list-to-lambda-list-with-quoted-defaults for use when generating macros with &key args
+attila.lendvai@gmail.com**20080522131559] 
+[follow :slime-dwim-branch change
+attila.lendvai@gmail.com**20080531172211] 
+[return the condition from signals or (values) if the test failed
+attila.lendvai@gmail.com**20080603161059] 
+[reading ignored warning
+attila.lendvai@gmail.com**20080604182857] 
+[Change the default value of *test-progress-print-right-margin* to 80.
+Luis Oliveira <loliveira@common-lisp.net>**20080622154037] 
+[Fix indentation in stefil.lisp:272
+Luis Oliveira <loliveira@common-lisp.net>**20080622154123] 
+[Remove &allow-other-keys from TESTABLE's SHARED-INITIALIZE
+Luis Oliveira <loliveira@common-lisp.net>**20080622160813
+ 
+ This way we can signal useful errors when bogus options are passed to
+ DEFTEST, etc.
+] 
+[Fix indentation in stefil.lisp:30
+Luis Oliveira <loliveira@common-lisp.net>**20080622161141] 
+[stefil-test: use :DOCUMENTATION instead of :DESCRIPTION in DEFSUITE forms.
+Luis Oliveira <loliveira@common-lisp.net>**20080622161721] 
+[Fix indentation in stefil.lisp:298
+Luis Oliveira <loliveira@common-lisp.net>**20080622170717] 
+[export root-suite
+attila.lendvai@gmail.com**20080623153300] 
+[get rid of defclass-star dependency by expanding a few macros inline and keeping their original in commented out form
+attila.lendvai@gmail.com**20080714151222] 
+[assertion-failed is in fact only a serious-condition, not an error. comes handy in some usages...
+attila.lendvai@gmail.com**20080907012404] 
+[fix dynamic-extent declaration
+attila.lendvai@gmail.com**20080907012520] 
+[added restarts to separately disable failed assertion debugging and error debugging
+attila.lendvai@gmail.com**20080919175722] 
+[more info in the test result's print-object
+attila.lendvai@gmail.com**20080920185638] 
+[error report printing smartness: don't print failure details if there were none
+attila.lendvai@gmail.com**20080921111833] 
+[small style changes in self-tests.lisp
+attila.lendvai@gmail.com**20081005130418] 
