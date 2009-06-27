@@ -77,19 +77,19 @@ Outputs: a list of double-floats
 	    (destructuring-array-bind (score nil x y r)
 		(run simulator 0d0 0d0)	; the first time
 	      (assert (not (minusp score))) 
-	      (let* ((direction (adjust-direction (calc-unit-tangent-vector (vec x y))
-						  approximated-direction))
-		     (r2 r)
+	      (let* ((r2 r)
 		     (r1 (sqrt (+ (* x x) (* y y))))
-		     (result (hohmann r1 r2)) 
-		     (init-dV (vscale direction (first result)))
-		     (final-dV (vscale direction (- (second result)))))
-		(format t "~&Direction vector: ~a~%" direction)
-		(format t "~&Result for Hohmann method: ~% - initial-dV = ~a, ~% - final-dV = ~a; ~% - estimated arrival time: ~a~%" init-dV final-dV (third result))
+		     (hohmann-result (hohmann r1 r2)))
+		(format t "~&Result for Hohmann method: ~% - initial-dV-scalar = ~a, ~% - final-dV-scalar = ~a; ~% - estimated arrival time: ~a~%" (first hohmann-result) (second hohmann-result) (third hohmann-result))
 		;; initial impulse
-		(format t "~&Give initial impulse: (~a, ~a)~%" (vx init-dV) (vy init-dV))
-		(run simulator (- (vx init-dV)) (- (vy init-dV)))
-		;; wait until reach perigee
+		(let* ((direction (adjust-direction
+				   (calc-unit-tangent-vector (vec x y))
+				   approximated-direction))
+		       (init-dV (vscale direction (first hohmann-result))))
+		  (format t "~&Current direction: ~a~%" direction)
+		  (format t "~&Give initial impulse: (~a, ~a)~%" (vx init-dV) (vy init-dV))
+		  (run simulator (- (vx init-dV)) (- (vy init-dV))))
+		;; wait until the satellite reachs perigee
 		(iter (for output = (run simulator 0d0 0d0))
 		      (when *trace-simulation-outputs*
 			(destructuring-array-bind (nil nil x y r) output
@@ -97,8 +97,13 @@ Outputs: a list of double-floats
 				  (- r (sqrt (+ (* x x) (* y y)))))))
 		      (until (done-p output)))
 		;; final impulse
-		(format t "~&Give final impulse: (~a, ~a)~%" (vx final-dV) (vy final-dV))
-		(run simulator (- (vx final-dV)) (- (vy final-dV)))
+		(destructuring-array-bind (nil nil x y nil) (run simulator 0d0 0d0)
+		  (let* ((direction (adjust-direction
+				     (calc-unit-tangent-vector (vec x y))
+				     approximated-direction))
+			 (final-dV (vscale direction (- (second hohmann-result)))))
+		    (format t "~&Give final impulse: (~a, ~a)~%" (vx final-dV) (vy final-dV))
+		    (run simulator (- (vx final-dV)) (- (vy final-dV)))))
 		;; wait until simulator terminates
 		(iter (for output = (run simulator 0d0 0d0))
 		      (destructuring-array-bind (score nil nil nil nil) output
@@ -109,5 +114,4 @@ Outputs: a list of double-floats
 		(nreverse thrusts)))))
       (error (c)
 	(format t "~&Satellite failed with program error: ~a~%" c)
-	(nreverse thrusts))))))
-
+	(nreverse thrusts)))))
