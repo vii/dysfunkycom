@@ -76,6 +76,17 @@
 	      collect stmt
 	      collect `(incf insn-counter)))))
 
+(defmacro with-fast-vm-compile (&body body)
+  `(macrolet ((aref-oport (i)
+		`(aref oport ,i))
+	      (aref-iport (i)
+		`(aref iport ,i))
+	      (aref-mem (i)
+		`(aref mem ,i))
+	      (status ()
+		`status))
+     ,@(remove-if 'not body)))
+
 (defun compile-instructions (instructions)
   (declare (type (simple-array (unsigned-byte 32) 1) instructions))
   `(lambda (mem iport oport)
@@ -83,7 +94,7 @@
               (optimize speed (safety 0)))
      (let ((status 0))
 	(declare (type fixnum status))
-	(with-debug-vm-compile
+	(with-fast-vm-compile
 	    ,@(loop for rd upfrom 0
 		    for insn across instructions
 		    for form = (compile-instruction insn rd)
@@ -135,6 +146,21 @@
 
 (defun describe-output-1 (oport)
   (describe-output oport '(Score Fuel Sx Sy Radius)))
+
+
+(defun make-controller (filename scenario)
+  (multiple-value-bind (program initial-data) (load-program filename)
+    (let ((memory (copy-seq initial-data))
+	  (input-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0))
+	  (output-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0)))
+      (setf (elt input-port #x3e80) scenario)
+      
+      (lambda (&optional (ax 0d0) (ay 0d0))
+	(setf (elt input-port 2) ax
+	      (elt input-port 2) ay)
+	(funcall (eval program) memory input-port output-port)
+	output-port))))
+
 
 
 ;;; (test-run "bin1.obf" 1001d0)

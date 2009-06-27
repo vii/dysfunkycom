@@ -20,6 +20,7 @@
 				     (:file "constants" :depends-on ("package"))
 				     (:file "physics" :depends-on ("constants"))
 				     (:file "submission" :depends-on ("constants"))
+				     (:file "control" :depends-on ("physics"))
 				     )))
 
   :depends-on (
@@ -27,6 +28,7 @@
 	       :alexandria
 	       :cl-fad
 	       #-darwin :lispbuilder-sdl
+	       :stefil
 	       :ieee-floats))
 
 
