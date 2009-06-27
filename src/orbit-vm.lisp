@@ -144,10 +144,10 @@
 	do (format t "~A = ~A~&" name val)))
 
 (defun describe-output-1 (oport)
-  (describe-output oport '(Score Fuel Sx Sy Radius)))
+  (describe-output oport '(Score Fuel Sx Sy Radius))
+  oport)
 
-
-(defun make-controller (filename scenario)
+(defun make-simulator (filename scenario)
   (multiple-value-bind (program initial-data) (load-program filename)
     (let ((memory (copy-seq initial-data))
 	  (input-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0))
