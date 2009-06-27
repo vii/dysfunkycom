@@ -87,7 +87,6 @@
 	    ,@(loop for rd upfrom 0
 		    for insn across instructions
 		    for form = (compile-instruction insn rd)
-		    when form
 		    collect form)))
        oport))
 
