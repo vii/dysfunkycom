@@ -38,7 +38,7 @@ Outputs: a list of double-floats
 	(nruns 0))
     (handler-case
 	(labels ((run (simulator dVx dVy)
-		   (when (> nruns *max-runs*)
+		   (when (>= nruns *max-runs*)
 		     (error "Too many simulations!"))
 		   (incf nruns)
 		   (push (list dVx dVy) thrusts)
@@ -54,7 +54,7 @@ Outputs: a list of double-floats
 		     (approximately-equal
 		      (sqrt (+ (* x x) (* y y)))
 		      r
-		      0.0001)))		;TODO: check the epsilon
+		      0.0000001)))	;TODO: check the epsilon
 		 (display-the-velocity (x y)
 		   (when *trace-simulation-outputs*
 		     (format t "~&Velocity of last second: (~a, ~a)~%"
@@ -118,5 +118,5 @@ Outputs: a list of double-floats
 		;; result
 		(nreverse thrusts)))))
       (error (c)
-	(format t "~&Satellite failed with program error: ~a~%" c)
+	(format t "~&Satellite failed with program error: ~a~%" c) 
 	(nreverse thrusts)))))
