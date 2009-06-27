@@ -1,17 +1,14 @@
 (in-package :dysfunkycom)
 
-(defun calc-unit-tangent-vector (x y)
-  )
-
 (defun hohmann (r1 r2)
   "Inputs:
-- r1 is the radius of current orbit
-- r2 is the radius of target orbit
+- r1 (meters) is the radius of current orbit
+- r2 (meters) is the radius of target orbit
 
 Outputs: a list of double-floats
-- initial-delta-v
-- final-delta-v
-- estimated time
+- initial-delta-v (m/sec)
+- final-delta-v (m/sec)
+- estimated time (sec)
  "
   (let ((initial-delta-v
 	 (* (sqrt (/ +g-m-earth+ r1))
@@ -32,27 +29,45 @@ Outputs: a list of double-floats
 	  estimated-time)))
 
 (defun hohmann-controller (simulator)
-  (let ((first-time-p t)
-	(dVx 0d0)
-	(dVy 0d0))
-    (labels ((done-p (&rest args)
-	       (declare (ignorable args))
-	       nil))
-      (iter (for output = (coerce (funcall simulator dVx dVy) 'list))
-	    (for (score fuel x y r) = output)
-	    (while (not (apply #'done-p (list score fuel x y r))))
-	    ;; calculate inputs for actuator
-	    (when first-time-p
-	      (let* ((r2 r)
-		     (r1 (sqrt (+ (* x x) (* y y))))
-		     (result (hohmann r1 r2)))
-		(apply #'format t "~&Result for Hohmann method: dV1 = ~a, dV2 = ~a; estimated arrival time: ~a~%" result)
-		;; (setf dVx ...
-;; 		      dVy ...)
-		))
-	    ;; (when (reach-the-target-orbit)
-;; 	      (setf dVx ...
-;; 		    dVy ...))
-	    ;; step states
-	    (setf first-time-p nil)
-	    (finally (return 'done))))))
+  (labels ((done-p (output)
+	     (destructuring-bind (score fuel x y r) output
+	       (declare (ignorable score fuel))
+	       (approximately-equal
+		(sqrt (+ (* x x) (* y y)))
+		r
+		0.000001))))		; TODO: check the epsilon
+    (let (direction)
+      ;; 1. estimate the direction
+      (let* ((init-output (funcall simulator 0d0 0d0))
+	     (x1 (aref init-output 2))
+	     (y1 (aref init-output 3))
+	     (approximated-direction
+	      (iter (for output = (funcall simulator 0d0 0d0))
+		    (for x2 = (aref output 2))
+		    (for y2 = (aref output 3))
+		    ;; TODO: check epsilons
+		    (while (and (approximately-equal x1 x2)
+				(approximately-equal y1 y2)))
+		    (finally
+		     (return (vec (- x2 x1) (- y2 y1))))))) 
+	(setf direction
+	      (adjust-direction (calc-unit-tangent-vector (vec x1 y1))
+				approximated-direction)))
+      ;; 2. run the hohmann method
+      (destructuring-bind (score fuel x y r)
+	  (funcall simulator 0d0 0d0)	; the first time
+	(declare (ignorable score fuel))
+	(let* ((r2 r)
+	       (r1 (sqrt (+ (* x x) (* y y))))
+	       (result (hohmann r1 r2)) 
+	       (init-dV (vscale direction (first result)))
+	       (final-dV (vscale direction (- (second result)))))
+	  (apply #'format t "~&Result for Hohmann method: dV1 = ~a, dV2 = ~a; estimated arrival time: ~a~%" result)
+	  ;; initial impulse
+	  (funcall simulator (vx init-dV) (vy init-dV))
+	  ;; wait until reach perigee
+	  (iter (for output = (coerce (funcall simulator 0d0 0d0) 'list))
+		(until (done-p output)))
+	  ;; final impulse
+	  (funcall simulator (vx final-dV) (vy final-dV))
+	  'done)))))
