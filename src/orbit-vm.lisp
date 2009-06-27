@@ -69,7 +69,7 @@
 		(msg "Reading from memory ~D the value ~A" i (aref mem i))
 		(aref mem i))
 	     ((setf aref-mem) (val i)
-	       (msg "Changing memory ~D from to ~A to ~A" i (aref mem i) val)
+	       (msg "Changing memory ~D from ~A to ~A" i (aref mem i) val)
 	      (setf (aref mem i) val)))
       ,@(loop for stmt in body
 	      collect `(msg "---- executing ~A" ',stmt)
