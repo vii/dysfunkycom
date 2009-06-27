@@ -123,15 +123,43 @@ Outputs: a list of double-floats
 	(multiple-value-bind (x1 y1)
 	    (position-and-direction tmpsim)
 	  (values
-	    (sim-time tmpsim)
-	    (angle x0 y0)
-	    (angle x1 y1)
-	    (estimate-real-orbital-period tmpsim)
-	    target-radius))))))
+	    (sim-time tmpsim)		; hohmann time
+	    (angle x0 y0)		; initial angle
+	    (angle x1 y1)		; final angle
+	    nil ;; (estimate-real-orbital-period tmpsim)
+	    target-radius		; target radius
+	    ))))))
 
 (defun problem-2-controller (sim)
-  )
+  (multiple-value-bind (x0 y0 vx0 vy0)
+      (position-and-direction sim)
+    (multiple-value-bind (hohmann-time init-angle end-angle _ target-radius)
+	(problem-2-calc-jump sim)
+      (declare (ignorable _))
+      ;; 1. wait to the right position
+      (let* ((radius (d x0 y0))
+	     (angular-velocity (/ (norm (vec vx0 vy0)) radius))
+	     (period (orbital-period radius)) ; TODO: check period and hohmann-time
+	     (triggering-angle (normalize-angle
+				(- (normalize-angle
+				    (- end-angle init-angle))
+				   (* angular-velocity hohmann-time)))))
+	(iter (for output = (sim-step sim))
+	      (destructuring-array-bind (nil nil x y xo yo) output
+		(let ((angle-to-opponent
+		       (normalize-angle
+			(calc-angle-between-vectors
+			 (vec x y)
+			 (vec xo yo)))))
+		  (when (approximately-equal angle-to-opponent
+					     triggering-angle
+					     0.00001) ;TODO: tune epsilon
+		    (leave))))))
+      ;; 2. hohmann
+      (problem-1-controller sim target-radius))))
 
+;;; previous implementation
+;;; not used now
 (defun hohmann-controller (sim)
   (let ((thrusts '())
 	(last-x 0d0)
