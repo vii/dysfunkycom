@@ -62,7 +62,7 @@ Outputs: a list of double-floats
 	       (result (hohmann r1 r2)) 
 	       (init-dV (vscale direction (first result)))
 	       (final-dV (vscale direction (- (second result)))))
-	  (apply #'format t "~&Result for Hohmann method: dV1 = ~a, dV2 = ~a; estimated arrival time: ~a~%" result)
+	  (format t "~&Result for Hohmann method: initial-dV = ~a, final-dV = ~a; estimated arrival time: ~a~%" init-dV final-dV (third result))
 	  ;; initial impulse
 	  (funcall simulator (vx init-dV) (vy init-dV))
 	  ;; wait until reach perigee
