@@ -29,7 +29,7 @@
        (lambda ()
 	 (pop satspos))))
 
-(defun make-visualise-oport (func &optional frames)
+(defun make-visualise-oport-1 (func &optional frames)
   (let ((time 0) (frame (pop frames)))
    (lambda ()
      (let ((ax 0d0) (ay 0d0))
@@ -46,12 +46,40 @@
 	 (when oport
 	   (destructuring-array-bind 
 	     (score fuel x y)
-	     (coerce oport 'list)
+	     oport
 	     (declare (ignore fuel))
 	     (check-type x double-float)
 	     
 	     (cond ((zerop score)
 		    (list (make-visat :name "dysfunc" :sx x :sy y)))
+		   (t 
+		    (format *debug-io* "Finishing because score is ~A~%" score)
+		    nil)))))))))
+
+(defun make-visualise-oport-2 (func &optional frames)
+  (let ((time 0) (frame (pop frames)))
+   (lambda ()
+     (let ((ax 0d0) (ay 0d0))
+       (when (and frame (= time (first frame)))
+	 (loop for (control val) in (rest frame)
+	       do (cond 
+		    ((= control 2) (setf ax val))
+		    ((= control 3) (setf ay val))
+		    (t (assert (= #x3e80 control))
+		       (assert (zerop time)))))
+	 (setf frame (pop frames)))
+       (let ((oport (funcall func ax ay)))
+	 (incf time)
+	 (when oport
+	   (destructuring-array-bind 
+	     (score fuel x y tx ty)
+	     oport
+	     (declare (ignore fuel))
+	     (check-type x double-float)
+	     
+	     (cond ((zerop score)
+		    (list (make-visat :name "dysfunc" :sx x :sy y)
+			  (make-visat :name "target" :sx (- tx x) :sy (- ty y) :color sdl:*green*)))
 		   (t 
 		    (format *debug-io* "Finishing because score is ~A~%" score)
 		    nil)))))))))
@@ -116,7 +144,7 @@
 		     (sdl:draw-filled-circle-* (xform-x (visat-sx visat)) (xform-y (visat-sy visat))
 					       visat-radius
 					       :color (visat-color visat))
-		     (visualise-draw-text (format nil "~A ~A" (visat-name visat) (d (visat-sx visat) (visat-sy visat)))
+		     (visualise-draw-text (format nil "~A ~,3E" (visat-name visat) (d (visat-sx visat) (visat-sy visat)))
 					  :x (xform-x (visat-sx visat)) :y (xform-y (visat-sy visat))
 					  :fg-color (sdl:any-color-but-this (visat-color visat))
 					  :bg-color (visat-color visat))
@@ -158,6 +186,9 @@
 	       
 
 
-(defun visualise-scenario (file scenario)
-  (visualise
-   (make-visualise-oport (make-simulator file scenario) (thrusts->frames scenario (hohmann-controller (make-simulator file scenario))))))
+(defun visualise-scenario (file scenario &key (frames (thrusts->frames scenario (hohmann-controller (make-simulator file scenario)))))
+  (let ((oport (cond ((> 2000 scenario) 'make-visualise-oport-1)
+		     (t 'make-visualise-oport-2))))
+    (visualise
+     (funcall oport (make-simple-simulator-func (make-simulator file scenario)) frames))))
+

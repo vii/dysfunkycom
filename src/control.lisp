@@ -31,11 +31,23 @@ Outputs: a list of double-floats
 	  final-delta-v
 	  estimated-time)))
 
-(defun hohmann-controller (simulator)
+(defun estimate-target-radius (sim)
+  (let ((simulator (make-simple-simulator-func (copy-sim sim))))
+    (let ((output (funcall simulator)))
+      (destructuring-array-bind (nil nil x y tx ty)
+				output
+				(d (- tx x) (- ty y))))))
+
+(defun problem-2-controller (sim)
+  (let ((target-radius (estimate-target-radius sim)))
+    target-radius))
+
+(defun hohmann-controller (sim)
   (let ((thrusts '())
 	(last-x 0d0)
 	(last-y 0d0)
-	(nruns 0))
+	(nruns 0)
+	(simulator (make-simple-simulator-func sim)))
     (handler-case
 	(labels ((run (simulator dVx dVy)
 		   (when (>= nruns *max-runs*)

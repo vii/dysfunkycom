@@ -147,6 +147,20 @@
   (describe-output oport '(Score Fuel Sx Sy Radius))
   oport)
 
+(defstruct (sim (:copier nil)) 
+  program
+  memory
+  input-port
+  output-port
+  )
+
+(defun copy-sim (sim)
+  (make-sim 
+   :program (sim-program sim)
+   :memory (copy-seq (sim-memory sim))
+   :input-port (copy-seq (sim-input-port sim))
+   :output-port (copy-seq (sim-output-port sim))))
+
 (defun make-simulator (filename scenario)
   (multiple-value-bind (program initial-data) (load-program filename)
     (let ((memory (copy-seq initial-data))
@@ -154,12 +168,19 @@
 	  (output-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0))
 	  (compiled (eval program)))
       (setf (elt input-port #x3e80) scenario)
-      
-      (lambda (&optional (ax 0d0) (ay 0d0))
-	(setf (elt input-port 2) ax
-	      (elt input-port 3) ay)
-	(funcall compiled memory input-port output-port)
-	output-port))))
+      (make-sim :program compiled
+		:input-port input-port
+		:output-port output-port
+		:memory memory))))
+
+(defun make-simple-simulator-func (sim)
+  (lambda (&optional (ax 0d0) (ay 0d0))
+    (with-slots (program memory input-port output-port)
+	sim
+      (setf (elt input-port 2) ax
+	    (elt input-port 3) ay)
+      (funcall program memory input-port output-port)
+      output-port)))
 
 
 
