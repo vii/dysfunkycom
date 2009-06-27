@@ -23,7 +23,7 @@
 				     (:file "math" :depends-on ("package"))
 				     (:file "macros" :depends-on ("package"))
 				     (:file "physics" :depends-on ("constants"))
-				     (:file "submission" :depends-on ("constants"))
+				     (:file "submission" :depends-on ("constants" "orbit-vm"))
 				     (:file "control" :depends-on ("physics" "macros"))
 				     )))
 
