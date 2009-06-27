@@ -38,8 +38,9 @@
 	   (coerce oport 'list)
 	  (declare (ignore fuel rest))
 	  (check-type x double-float)
+
 	  (cond ((zerop score)
-		 (list (make-visat :name "dysfunc" :sx x :sx y)))
+		 (list (make-visat :name "dysfunc" :sx x :sy y)))
 		(t 
 		 (format *debug-io* "Finishing because score is ~A~%" score)
 		nil)))))))
@@ -114,16 +115,20 @@
 
 	;; Enable key repeat. Set to default values.
 	(sdl:enable-key-repeat nil nil)
-	(sdl:with-events ()
-	  (:quit-event () t)
-	  (:key-down-event
-	   (:key key)
-	   (cond ((sdl:key= key :sdl-key-escape) (sdl:push-quit-event))
-		 (t 	
-		  (next-step)
-		  (draw))))
-	  (:video-expose-event () (sdl:update-display))
-	  (:idle ()
-		  (next-step)
-		  (draw)))))))
+	(let (playing)
+	 (sdl:with-events ()
+	   (:quit-event () t)
+	   (:key-down-event
+	    (:key key)
+	    (cond ((sdl:key= key :sdl-key-escape) (sdl:push-quit-event))
+		  ((sdl:key= key :sdl-key-space)
+		    (setf playing (not playing)))
+		  (t 	
+		   (next-step)
+		   (draw))))
+	   (:video-expose-event () (sdl:update-display))
+	   (:idle ()
+		  (when playing
+		    (next-step))
+		  (draw))))))))
 	       
