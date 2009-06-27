@@ -31,13 +31,17 @@ Outputs: a list of double-floats
 	  estimated-time)))
 
 (defun hohmann-controller (simulator)
-  (let ((thrusts '()))
+  (let ((thrusts '())
+	(last-x 0d0)
+	(last-y 0d0))
     (handler-case
 	(labels ((run (simulator dVx dVy)
 		   (push (list dVx dVy) thrusts)
 		   (let ((output (funcall simulator dVx dVy)))
 		     (when *trace-simulation-outputs*
 		       (describe-output-1 output))
+		     (destructuring-array-bind (nil nil x y nil) output
+		       (display-the-velocity x y))
 		     output))
 		 (done-p (output)
 		   (destructuring-array-bind (score nil x y r) output 
@@ -45,12 +49,21 @@ Outputs: a list of double-floats
 		     (approximately-equal
 		      (sqrt (+ (* x x) (* y y)))
 		      r
-		      0.000001))))	; TODO: check the epsilon
+		      0.0001)))		;TODO: check the epsilon
+		 (display-the-velocity (x y)
+		   (when *trace-simulation-outputs*
+		     (format t "~&Velocity of last second: (~a, ~a)~%"
+			     (- x last-x)
+			     (- y last-y)))
+		   (setf last-x x
+			 last-y y)))
 	  (let (approximated-direction)
 	    ;; 1. estimate the direction
 	    (let* ((init-output (run simulator 0d0 0d0))
 		   (x1 (aref init-output 2))
-		   (y1 (aref init-output 3))) 
+		   (y1 (aref init-output 3)))
+	      (setf last-x x1
+		    last-y y1)
 	      (setf approximated-direction
 		    (iter (for output = (run simulator 0d0 0d0)) 
 			  (for x2 = (aref output 2))
@@ -75,7 +88,7 @@ Outputs: a list of double-floats
 		(format t "~&Result for Hohmann method: ~% - initial-dV = ~a, ~% - final-dV = ~a; ~% - estimated arrival time: ~a~%" init-dV final-dV (third result))
 		;; initial impulse
 		(format t "~&Give initial impulse: (~a, ~a)~%" (vx init-dV) (vy init-dV))
-		(run simulator (vx init-dV) (vy init-dV))
+		(run simulator (vx init-dV) (- (vy init-dV)))
 		;; wait until reach perigee
 		(iter (for output = (run simulator 0d0 0d0))
 		      (when *trace-simulation-outputs*
