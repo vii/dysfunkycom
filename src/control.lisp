@@ -80,7 +80,7 @@ Outputs: a list of double-floats
 	       (approximately-equal
 		(d x y)
 		r
-		0.000001))))
+		0.00001))))
     (multiple-value-bind (x y)
 	(position-and-direction sim)
       (multiple-value-bind (init-dv end-dv)
@@ -168,6 +168,23 @@ To see the earth disappear
 	    target-radius		; target radius
 	    ))))))
 
+(defun problem-2-chaser (sim &key (range 500) (min-fuel 100))
+  (let ((ax 0d0) (ay 0d0))
+    (iter (for output = (sim-step sim ax ay))
+	  (setf ax 0d0 ay 0d0)
+	  (destructuring-array-bind (score fuel nil nil xo yo) output
+				    (until (plusp score))
+				    (let ((d (d xo yo)))
+				      (unless (> range d)
+					(setf ax (/ xo d range)
+					      ay (/ yo d range)))
+				      (cl-user::debug-state d xo yo ax ay)
+
+				      (when (>= (+ min-fuel (d ax ay)) fuel)
+					 (setf ax 0d0 ay 0d0)))))))
+
+  (values (reverse (sim-thrusts sim)) (sim-time sim)))
+
 (defun problem-2-controller (sim)
   (multiple-value-bind (x0 y0 vx0 vy0)
       (position-and-direction-target sim)
@@ -193,7 +210,9 @@ To see the earth disappear
 		    (leave))))))
 
       ;; 2. hohmann
-      (problem-1-controller sim target-radius))))
+      (problem-1-controller sim target-radius)
+      (problem-2-chaser sim)
+      )))
 
 ;;; previous implementation
 ;;; not used now
