@@ -95,6 +95,8 @@
 	       (unless satspos
 		 (return-from visualise time))
 	       (incf time))
+	     (skip-frames (n)
+	       (loop repeat n do (next-step)))
 	     (crashing-into-earth ()
 	       (iter (for visat in satspos)
 		     (thereis (>= (* 1.01d0 (^2 +radius-earth+))
@@ -134,6 +136,12 @@
 	   (:key-down-event
 	    (:key key)
 	    (cond ((sdl:key= key :sdl-key-escape) (sdl:push-quit-event))
+		  ((sdl:key= key :sdl-key-q) (skip-frames 100))
+		  ((sdl:key= key :sdl-key-w) (skip-frames 500))
+		  ((sdl:key= key :sdl-key-e) (skip-frames 1000))
+		  ((sdl:key= key :sdl-key-r) (skip-frames 5000))
+		  ((sdl:key= key :sdl-key-t) (skip-frames 10000))
+		  ((sdl:key= key :sdl-key-y) (skip-frames 50000))
 		  ((sdl:key= key :sdl-key-space)
 		    (setf playing (not playing)))
 		  (t 	
