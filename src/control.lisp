@@ -30,8 +30,8 @@ Outputs: a list of double-floats
 
 (defun hohmann-controller (simulator)
   (labels ((done-p (output)
-	     (destructuring-bind (score fuel x y r) output
-	       (declare (ignorable score fuel))
+	     (destructuring-bind (score fuel x y r &rest ignored) output
+	       (declare (ignorable score fuel ignored))
 	       (approximately-equal
 		(sqrt (+ (* x x) (* y y)))
 		r
@@ -54,9 +54,9 @@ Outputs: a list of double-floats
 	      (adjust-direction (calc-unit-tangent-vector (vec x1 y1))
 				approximated-direction)))
       ;; 2. run the hohmann method
-      (destructuring-bind (score fuel x y r)
-	  (funcall simulator 0d0 0d0)	; the first time
-	(declare (ignorable score fuel))
+      (destructuring-bind (score fuel x y r &rest ignored)
+	  (coerce (funcall simulator 0d0 0d0) 'list) ; the first time
+	(declare (ignorable score fuel ignored))
 	(let* ((r2 r)
 	       (r1 (sqrt (+ (* x x) (* y y))))
 	       (result (hohmann r1 r2)) 
