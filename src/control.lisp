@@ -205,9 +205,11 @@ Outputs: a list of double-floats
 		      (destructuring-array-bind (score nil nil nil nil) output
 			(while (zerop score)))
 		      (finally
+		       (format t "~&Time spent: ~a seconds~%" (length thrusts))
 		       (format t "~&The final score is: ~a~%" (aref output 0))))
 		;; result
 		(nreverse thrusts)))))
       (error (c)
+	(format t "~&Time spent: ~a seconds~%" (length thrusts))
 	(format t "~&Satellite failed with program error: ~a~%" c) 
 	(nreverse thrusts)))))
