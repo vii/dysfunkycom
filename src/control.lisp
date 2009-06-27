@@ -181,7 +181,7 @@ To see the earth disappear
 				      (cl-user::debug-state d xo yo ax ay)
 
 				      (when (>= (+ min-fuel (d ax ay)) fuel)
-					 (setf ax 0d0 ay 0d0)))))))
+					 (setf ax 0d0 ay 0d0))))))
 
   (values (reverse (sim-thrusts sim)) (sim-time sim)))
 
