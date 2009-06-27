@@ -26,6 +26,7 @@
 	       :alexandria
 	       :cl-fad
 	       #-darwin :lispbuilder-sdl
+	       :stefil
 	       :ieee-floats))
 
 
