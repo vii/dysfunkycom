@@ -18,6 +18,7 @@
 				     #-darwin (:file "visualise" :depends-on ("physics"))
 				     (:file "orbit-vm" :depends-on ("package"))
 				     (:file "constants" :depends-on ("package"))
+				     (:file "math" :depends-on ("package"))
 				     (:file "physics" :depends-on ("constants"))
 				     (:file "submission" :depends-on ("constants"))
 				     (:file "control" :depends-on ("physics"))
