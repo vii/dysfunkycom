@@ -30,8 +30,8 @@ Outputs: a list of double-floats
 
 (defun hohmann-controller (simulator)
   (labels ((done-p (output)
-	     (destructuring-bind (score fuel x y r &rest ignored) output
-	       (declare (ignorable score fuel ignored))
+	     (destructuring-array-bind (score nil x y r) output
+	       (assert (not (minusp score)))
 	       (approximately-equal
 		(sqrt (+ (* x x) (* y y)))
 		r
@@ -54,9 +54,9 @@ Outputs: a list of double-floats
 	      (adjust-direction (calc-unit-tangent-vector (vec x1 y1))
 				approximated-direction)))
       ;; 2. run the hohmann method
-      (destructuring-bind (score fuel x y r &rest ignored)
-	  (coerce (funcall simulator 0d0 0d0) 'list) ; the first time
-	(declare (ignorable score fuel ignored))
+      (destructuring-array-bind (score nil x y r)
+	  (funcall simulator 0d0 0d0) ; the first time
+	  (assert (not (minusp score)))
 	(let* ((r2 r)
 	       (r1 (sqrt (+ (* x x) (* y y))))
 	       (result (hohmann r1 r2)) 
@@ -66,7 +66,7 @@ Outputs: a list of double-floats
 	  ;; initial impulse
 	  (funcall simulator (vx init-dV) (vy init-dV))
 	  ;; wait until reach perigee
-	  (iter (for output = (coerce (funcall simulator 0d0 0d0) 'list))
+	  (iter (for output = (funcall simulator 0d0 0d0))
 		(until (done-p output)))
 	  ;; final impulse
 	  (funcall simulator (vx final-dV) (vy final-dV))
