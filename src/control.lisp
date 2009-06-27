@@ -45,12 +45,18 @@ Outputs: a list of double-floats
       r)))
 
 (defun position-and-direction (sim)
+  (position-and-direction-target sim 2))
+
+(defun position-and-direction-target (sim &optional (target-offset 4))
   (let ((simulator (make-simple-simulator-func (copy-sim sim))))
-    (destructuring-array-bind (nil nil x0 y0)
-	(funcall simulator)
-      (destructuring-array-bind (nil nil x1 y1)
-	  (funcall simulator)
-	(values x0 y0 (- x1 x0) (- y1 y0))))))
+    (flet ((pos ()
+	    (let ((oport (funcall simulator)))
+	      (values (elt oport target-offset) (elt oport (1+ target-offset))))))
+      (multiple-value-bind (x0 y0)
+	  (pos)
+	(multiple-value-bind (x1 y1)
+	  (pos)
+	  (values x0 y0 (- x1 x0) (- y1 y0)))))))
 
 (defun problem-1-controller (sim &optional (r (problem-1-target-radius sim)))
   (labels ((boost (speed)
@@ -115,8 +121,6 @@ Outputs: a list of double-floats
 	    (angle x1 y1)
 	    (estimate-real-orbital-period tmpsim)
 	    target-radius))))))
-
-
 
 (defun problem-2-controller (sim)
   )
