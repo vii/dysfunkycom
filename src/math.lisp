@@ -37,7 +37,7 @@
 (defun calc-angle-between-vectors (v1 v2)
   (let* ((v1 (normalize-vector v1))
 	 (v2 (normalize-vector v2)) 
-	 (angle (acos (v* v1 v2))))
+	 (angle (acos (vdot* v1 v2))))
     (assert (<= 0d0 angle pi))
     angle))
 
