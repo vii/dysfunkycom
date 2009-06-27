@@ -67,23 +67,23 @@ Outputs: a list of double-floats
 	  (values x0 y0 (- x1 x0) (- y1 y0)))))))
 
 (defun problem-1-controller (sim &optional (r (problem-1-target-radius sim)))
-  (labels ((boost (speed)
-	     (let ((vec (vscale (multiple-value-bind (x y vx vy)
-				    (position-and-direction sim)
-				  (adjust-direction
-				   (calc-unit-tangent-vector (vec x y))
-				   (vec vx vy))) speed)))
-	       (sim-step sim (vx vec) (vy vec))))
-	   (done? ()
-	     (destructuring-array-bind (score nil x y) 
-		 (sim-step sim)
-	       (assert (not (minusp score)))
-	       (approximately-equal
-		(d x y)
-		r
-		0.0000001))))
     (multiple-value-bind (x y)
 	(position-and-direction sim)
+      (labels ((boost (speed)
+		 (let ((vec (vscale (multiple-value-bind (x y vx vy)
+					(position-and-direction sim)
+				      (adjust-direction
+				       (calc-unit-tangent-vector (vec x y))
+				       (vec vx vy))) speed)))
+		   (sim-step sim (vx vec) (vy vec))))
+	       (done? ()
+		 (destructuring-array-bind (score nil x1 y1) 
+					   (sim-step sim)
+					   (assert (zerop score))
+					   (let ((vx (- x1 x)) (vy (- y1 y)))
+					     (prog1 (/= (signum (- (d x1 y1) r))
+							(signum (- (d (+ x1 (* 1 vx)) (+ y1 (* 1 vy))) r)))
+					       (setf x x1 y y1))))))
       (multiple-value-bind (init-dv end-dv)
 	  (hohmann (d x y) r)
 	(boost (- init-dv))
@@ -177,9 +177,8 @@ To see the earth disappear
 				    (until (plusp score))
 				    (let ((d (d xo yo)))
 				      (unless (> range d)
-					(setf ax (/ xo d range)
-					      ay (/ yo d range)))
-				      (cl-user::debug-state d xo yo ax ay)
+					(setf ax (/ (- xo) d )
+					      ay (/ (- yo) d )))
 
 				      (when (>= (+ min-fuel (d ax ay)) fuel)
 					 (setf ax 0d0 ay 0d0))))))
@@ -197,14 +196,15 @@ To see the earth disappear
       ;; 1. wait to the right position
       (let* ((radius (d x0 y0))
 	     (angular-velocity (/ (norm (vec vx0 vy0)) radius))
-	     (triggering-angle (normalize-angle
-				(- (- end-angle init-angle)
-				   (* angular-velocity hohmann-time)))))
-	(print (list radius angular-velocity triggering-angle))
+	     (triggering-angle 
+	      (normalize-angle
+	       (-
+		(- end-angle init-angle)
+		(* angular-velocity hohmann-time)))))
 	(iter (for output = (sim-step sim))
 	      (destructuring-array-bind (nil nil x y xo yo) output
 		(let ((angle-to-opponent
-		       (normalize-angle
+		       (normalize-angle 
 			(calc-angle-between-vectors
 			 (vec x y)
 			 (vec (- x xo) (- y yo))))))
@@ -219,16 +219,7 @@ To see the earth disappear
       (print (sim-time sim))
       (print 'stay)
       ;; 3. feedback loop for adjustment
-      (iter (with dVx = 0d0)
-	    (with dVy = 0d0)
-	    (for output = (sim-step sim dVx dVy))
-	    (setf dVx 0d0
-		  dVy 0d0)
-	    (destructuring-array-bind (score nil nil nil xo yo) output
-	      (when (not (zerop score))
-		(leave))
-	      (print (d xo yo))
-	      ))
+      (problem-2-chaser sim)
       ;; return val
       (values (reverse (sim-thrusts sim)) (sim-time sim)))))
 
