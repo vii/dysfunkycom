@@ -151,13 +151,14 @@
   (multiple-value-bind (program initial-data) (load-program filename)
     (let ((memory (copy-seq initial-data))
 	  (input-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0))
-	  (output-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0)))
+	  (output-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0))
+	  (compiled (eval program)))
       (setf (elt input-port #x3e80) scenario)
       
       (lambda (&optional (ax 0d0) (ay 0d0))
 	(setf (elt input-port 2) ax
 	      (elt input-port 2) ay)
-	(funcall (eval program) memory input-port output-port)
+	(funcall compiled memory input-port output-port)
 	output-port))))
 
 
