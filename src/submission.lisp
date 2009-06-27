@@ -24,8 +24,7 @@ Example:
 \(submission 1001d0 '\(\(0 \(16000 1001d0)) \(1 \(2 1d0) \(3 0.5d0)) \(3 \(2 0d0)) \(5)))"
   (let* ((length (+ 12 ; header
 		   (* 8 (length frames)) ; frame headers
-		   (* 12 (reduce #'+ (mapcar (lambda (frame) (1- (length frame))) frames))) ; port mappings
-		   8)) ; end frame
+		   (* 12 (reduce #'+ (mapcar (lambda (frame) (1- (length frame))) frames))))) ; port mappings
 	 (output (make-array length :element-type '(unsigned-byte 8))))
     (write-le-int #xcafebabe output 0)
     (write-le-int *team-id* output 4)
