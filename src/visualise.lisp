@@ -29,21 +29,33 @@
        (lambda ()
 	 (pop satspos))))
 
-(defun make-visualise-oport (func)
-  (lambda ()
-    (let ((oport (funcall func)))
-      (when oport
-	(destructuring-array-bind 
-	      (score fuel x y)
-	   (coerce oport 'list)
-	  (declare (ignore fuel))
-	  (check-type x double-float)
+(defun make-visualise-oport (func &optional frames)
+  (let ((time 0) (frame (pop frames)))
+   (lambda ()
+     (let ((ax 0d0) (ay 0d0))
+       (when (= time (first frame))
+	 (loop for (control val) in (rest frame)
+	       do (cond ((= control 2) (setf ax val))
+			((= control 3) (setf ay val))
+			(t (assert (= #x3e80 control))
+			   (assert (zerop time)))))
+	 (setf frame (pop frames)))
+       (let ((oport (funcall func ax ay)))
+	 (incf time)
+	 (when oport
+	   (destructuring-array-bind 
+	     (score fuel x y)
+	     (coerce oport 'list)
+	     (declare (ignore fuel))
+	     (check-type x double-float)
+	     
+	     (cond ((zerop score)
+		    (list (make-visat :name "dysfunc" :sx x :sy y)))
+		   (t 
+		    (format *debug-io* "Finishing because score is ~A~%" score)
+		    nil)))))))))
 
-	  (cond ((zerop score)
-		 (list (make-visat :name "dysfunc" :sx x :sy y)))
-		(t 
-		 (format *debug-io* "Finishing because score is ~A~%" score)
-		nil)))))))
+
 
 (defun visualise-draw-text (text &key (x 10) (y 10) (font sdl:*default-font*) (surface sdl:*default-surface*) (fg-color sdl:*white*) (bg-color sdl:*black*))
   (sdl:render-string-shaded text 
@@ -133,3 +145,8 @@
 		    (next-step))
 		  (draw))))))))
 	       
+
+
+(defun visualise-scenario (file scenario)
+  (visualise
+   (make-visualise-oport (make-controller file scenario) (thrusts->frames scenario (hohmann-controller (make-simulator file scenario))))))
