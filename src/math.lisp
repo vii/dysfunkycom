@@ -35,13 +35,13 @@
     (vec (/ x r) (/ y r))))
 
 (defun normalize-angle (angle)
-  (- (mod angle (* 2 pi)) pi))
+  (mod angle (* 2 pi)))
 
 (defun calc-angle-between-vectors (v1 v2)
   (let* ((v1 (normalize-vector v1))
 	 (v2 (normalize-vector v2)) 
-	 (angle (- (atan (vy v1) (vx v1))
-		   (atan (vy v2) (vx v2)))))
+	 (angle (- (atan (vy v2) (vx v2))
+		   (atan (vy v1) (vx v1)))))
     angle))
 
 (defun calc-unit-tangent-vector (v)
@@ -49,7 +49,7 @@
 
 (defun adjust-direction (v vref)
   (let ((angle (calc-angle-between-vectors v vref)))
-    (if (> angle #.(/ pi 2))
+    (if (or (> angle #.(/ pi 2)) (< angle #.(- (/ pi 2))))
 	(vec (- (vx v)) (- (vy v)))
 	v)))
 

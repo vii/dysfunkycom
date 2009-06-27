@@ -80,7 +80,7 @@ Outputs: a list of double-floats
 	       (approximately-equal
 		(d x y)
 		r
-		0.00000001))))
+		0.0000001))))
     (multiple-value-bind (x y)
 	(position-and-direction sim)
       (multiple-value-bind (init-dv end-dv)
@@ -194,18 +194,15 @@ To see the earth disappear
       ;; 1. wait to the right position
       (let* ((radius (d x0 y0))
 	     (angular-velocity (/ (norm (vec vx0 vy0)) radius))
-	     (period (orbital-period radius)) ; TODO: check period and hohmann-time
 	     (triggering-angle (normalize-angle
 				(- (- end-angle init-angle)
 				   (* angular-velocity hohmann-time)))))
-	(declare (ignorable period))
 	(iter (for output = (sim-step sim))
 	      (destructuring-array-bind (nil nil x y xo yo) output
 		(let ((angle-to-opponent
-		       (normalize-angle
-			(calc-angle-between-vectors
-			 (vec x y)
-			 (vec (- xo x) (- yo y))))))
+		       (calc-angle-between-vectors
+			(vec x y)
+			(vec (- x xo) (- y yo)))))
 		  (when (approximately-equal angle-to-opponent
 					     triggering-angle
 					     0.001)
@@ -222,9 +219,8 @@ To see the earth disappear
 	    (destructuring-array-bind (score nil nil nil xo yo) output
 	      (when (not (zerop score))
 		(leave))
-	      (print (list xo yo))
-	      (setf dVx xo
-		    dVy yo)))
+	      ;; (print (d xo yo))
+	      ))
       ;; return val
       (values (reverse (sim-thrusts sim)) (sim-time sim)))))
 
