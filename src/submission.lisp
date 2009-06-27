@@ -12,6 +12,19 @@
   (write-le-int (ieee-floats:encode-float64 d) buf offset 64))
 (declaim (inline write-le-double))
 
+(defun thrusts->frames (scenario thrusts)
+  "Takes a seq of thrusts from time 1 until the time when score changed."
+  (append `((0 (16000 ,scenario)))
+	  (iter (for i upfrom 1)
+		(for last-vx first 0d0 then vx)
+		(for last-vy first 0d0 then vy)
+		(for (vx vy) in thrusts)
+		(unless (and (= vx last-vx) (= vy last-vy))
+		  (let ((frame `(,i ,(if (= vx last-vx) nil `(2 ,vx))
+				    ,(if (= vy last-vy) nil `(3 ,vy)))))
+		    (collect (remove-if-not #'identity frame) into acc)))
+		(finally (return (append acc (list (list i))))))))
+
 (defun submission (scenario frames)
   "FRAMES is a list of frames where the input ports have changed.
 The format is:
@@ -38,7 +51,15 @@ Example:
 		(write-le-double value output offset) (incf offset 8)))
     output))
 
-(defun write-submission (scenario frames filename)
+;;; Questions
+;;; - do we want to do anything in frame 0 (other than the scenario setup)?
+;;; - do we have to include the scenario setup here?
+;;; - are the initial thrusts (0 0) ? (so if we want to give (0 0) we can skip that frame)
+(defun write-submission (scenario thrusts filename)
+  "THRUSTS contains pairs of doubles, of _every_ frame from frame _1_.
+The last frame should be the first one that gives a non-zero score.
+Example:
+\(write-submission 1001d0 '\(\(1.0d0 0.5d0) \(1.0d0 0.5d0) \(0.0d0 0.5d0) \(0.0d0 0.5d0)) \"submission-test\")"
   (with-open-file (s filename :direction :output :if-exists :supersede
 		     :element-type '(unsigned-byte 8))
-    (write-sequence (submission scenario frames) s)))
+    (write-sequence (submission scenario (thrusts->frames scenario thrusts)) s)))
