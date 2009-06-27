@@ -88,7 +88,45 @@ Outputs: a list of double-floats
 	(boost (- init-dv))
 	(loop until (done?))
 	(boost (- end-dv))
-	(values (sim-thrusts sim) (sim-time sim))))))
+	(values (reverse (sim-thrusts sim)) (sim-time sim))))))
+
+(defun problem-1-controller-burn (sim &key (r (problem-1-target-radius sim)) (fuel 9000))
+  "This does not work
+
+To see the earth disappear
+
+ (visualise-scenario \"/home/john/Programs/dysfunkycom/orbit-code/bin1.obf\" 1004d0 :frames (let ((sim (make-simulator \"/home/john/Programs/dysfunkycom/orbit-code/bin1.obf\" 1004d0))) (problem-1-controller-burn sim)))
+"
+  (labels ((boost (speed &key (evx 0d0) (evy 0d0))
+	     (let ((vec (vscale (multiple-value-bind (x y vx vy)
+				    (position-and-direction sim)
+				  (adjust-direction
+				   (calc-unit-tangent-vector (vec x y))
+				   (vec vx vy))) speed)))
+	       (sim-step sim (+ (vx vec) evx) (+ (vy vec) evy))
+	       (values (vx vec) (vy vec))))
+	   (done? ()
+	     (destructuring-array-bind (score nil x y) 
+		 (sim-step sim)
+	       (assert (not (minusp score)))
+	       (approximately-equal
+		(d x y)
+		r
+		0.0001))))
+    (multiple-value-bind (x y)
+	(position-and-direction sim)
+      (multiple-value-bind (init-dv end-dv)
+	  (hohmann (d x y) r)
+	(let ((fuel-used (+ (abs init-dv) (abs end-dv))))
+	  (let ((extra (/ (- fuel fuel-used) 2)))
+	    (multiple-value-bind (vx vy)
+		(boost (- (+ extra init-dv)))
+	      (loop until (done?))
+	      (flet ((s (x)
+		       (/ (* -1 x (abs extra)) (abs (+ extra init-dv)))))
+		(boost (- end-dv) :evx (s vx) :evy (s vy)))))
+	  (values (reverse (sim-thrusts sim)) (sim-time sim)))))))
+	
 
 (defun estimate-real-orbital-period (sim)
   (let ((t0 (sim-time sim)))
