@@ -1,0 +1,143 @@
+[initial
+attila.lendvai@gmail.com**20070114110641] 
+[First successful self-test
+attila.lendvai@gmail.com**20070114213709] 
+[Added Swank integration and some useful print-object specializations
+attila.lendvai@gmail.com**20070114235535] 
+[Another wave of early work, getting ready
+attila.lendvai@gmail.com**20070115143545] 
+[Renamed to Stefil
+attila.lendvai@gmail.com**20070115144532] 
+[Indenting
+attila.lendvai@gmail.com**20070115190054] 
+[Keep a hashtable of tests run instead of a simple counter
+attila.lendvai@gmail.com**20070115194749] 
+[Print progress and various smallies
+attila.lendvai@gmail.com**20070115214112] 
+[Print margin for progress, use vector for storing failures
+attila.lendvai@gmail.com**20070115220417] 
+[make 'is return the result of the expression to be able to wrap anything with it
+attila.lendvai@gmail.com**20070116001002] 
+[Better report of failed assertions in the debugger
+attila.lendvai@gmail.com**20070116005402] 
+[We don't need that many files... classes.lisp is gone.
+attila.lendvai@gmail.com**20070116165201] 
+[Added finishes
+attila.lendvai@gmail.com**20070116175444] 
+[Clean up stefil-test package creation
+attila.lendvai@gmail.com**20070116181222] 
+[Better support for &rest args
+attila.lendvai@gmail.com**20070116185433] 
+[Removed warning when a suite skips a test that has mandatory arguments
+attila.lendvai@gmail.com**20070116190750] 
+[Warn when test-op is run and repl thread state is altered
+attila.lendvai@gmail.com**20070116192129] 
+[Continue restart for assertions without test context
+attila.lendvai@gmail.com**20070116200028] 
+[Added runs-without-failure?
+attila.lendvai@gmail.com**20070116200103] 
+[in-suite returns the suite object itself
+attila.lendvai@gmail.com**20070121151856] 
+[Added Slime dwim inspector lookup hook for tests
+attila.lendvai@gmail.com**20070121152630] 
+[Fix :in
+attila.lendvai@gmail.com**20070123124350] 
+[Added defsuite*.
+levente.meszaros@gmail.com**20070125154345] 
+[Allow tests not to be part of current suite by passing :in nil.
+levente.meszaros@gmail.com**20070125154400] 
+[More inspector stuff
+attila.lendvai@gmail.com**20070125165449] 
+[Added *test-result-history* and *last-test-result*
+attila.lendvai@gmail.com**20070125170627] 
+[Added custom 'abort-testing restart that returns the test run results
+attila.lendvai@gmail.com**20070125173200] 
+[Added defixture and with-fixture
+attila.lendvai@gmail.com**20070126162144] 
+[FIX: 'is with macros
+attila.lendvai@gmail.com**20070126163532] 
+[Added custom message support for 'is
+attila.lendvai@gmail.com**20070126163556] 
+[Added :auto-call #f arg for tests to tell their suites not to call them when the suite is invoked
+attila.lendvai@gmail.com**20070126164847] 
+['is got smarted when used with macros
+attila.lendvai@gmail.com**20070126170050] 
+[Change print-object of failed-assertion
+attila.lendvai@gmail.com**20070126170123] 
+[More advanced (hehh) fixture test
+attila.lendvai@gmail.com**20070126171404] 
+[FIX: is with macros
+attila.lendvai@gmail.com**20070128104628] 
+[Style changes in some printed messages
+attila.lendvai@gmail.com**20070129201530] 
+[Added style warning when defining tests into a foreign package
+attila.lendvai@gmail.com**20070129201716] 
+[defsuite now can have a body and has an flet called run-child-tests.
+attila.lendvai@gmail.com**20070205150655
+ 
+ Hint:
+ (defsuite foo
+   (with-fixture bar
+     (run-child-tests)))
+ 
+ Incompatible change: (defsuite suite :bar 42) => (defsuite (suite :bar 42)).
+] 
+[FIX: run-child-tests
+attila.lendvai@gmail.com**20070205165506] 
+[Small self-test change with fixtures
+attila.lendvai@gmail.com**20070221124721] 
+[Added a toplevel continue-without-debugging restart that is available when errors happen
+attila.lendvai@gmail.com**20070221124856] 
+[Display parent test frames in the inspector
+attila.lendvai@gmail.com**20070221125107] 
+[Small wording changes
+attila.lendvai@gmail.com**20070221125112] 
+[get-test -> find-test, rem-test -> (setf (find-test ..) nil)
+attila.lendvai@gmail.com**20070223151341] 
+[Only load stuff lethal to the official swank when we have #+branched-slime in *features*.
+attila.lendvai@gmail.com**20070307090230
+ 
+ This should make Stefil compatible with the official Slime.
+] 
+[Various small changes
+attila.lendvai@gmail.com**20070307151817] 
+[Fix context inspection, list the parent context in new lines
+attila.lendvai@gmail.com**20070307151840] 
+[Added *compile-before-run* and make it false by default, so pressing 'v' in SLDB works
+attila.lendvai@gmail.com**20070307151921] 
+[Added in-root-suite
+attila.lendvai@gmail.com**20070307152050] 
+[Moved a big chunk of the deftest macro body into a function and added a *compile-tests-with-debug* initialized to false by default.
+attila.lendvai@gmail.com**20070307174144] 
+[Added without-debugging macro
+attila.lendvai@gmail.com**20070308001620] 
+[Added simple time measurement that informs about how much _real_ time rest-runs spent
+attila.lendvai@gmail.com**20070308001856] 
+[Fix printer.
+levente.meszaros@gmail.com**20070308085516] 
+[Fix test names in restarts.
+levente.meszaros@gmail.com**20070308092801] 
+[Ensure print-object does not break for global-context.
+levente.meszaros@gmail.com**20070308103225] 
+[Split run-test-body into two, prepare for run-failed-tests
+attila.lendvai@gmail.com**20070309154101] 
+[Added run-failed-tests and some [rerun] actions in the inspector
+attila.lendvai@gmail.com**20070309154125] 
+[Show actions where appropriate in the inspector.
+levente.meszaros@gmail.com**20070309164216] 
+[Fix applying tests to its context's arguments.
+levente.meszaros@gmail.com**20070309164243] 
+[Fix assertion failed message for (is (not (function a b c)))
+attila.lendvai@gmail.com**20070312134838] 
+[Run the test-op in without-debugging to make it non-interactive
+attila.lendvai@gmail.com**20070315121653] 
+[Test for #+slime-wdim-branch
+attila.lendvai@gmail.com**20070315122552] 
+[Warn in run-failed-tests if there were no failed tests at the given place
+attila.lendvai@gmail.com**20070315123941] 
+[Smarten up inspection, follow slime changes
+attila.lendvai@gmail.com**20070318183721] 
+[Only register one 'continue-without-debugging restart in a restart-bind
+attila.lendvai@gmail.com**20070319170049] 
+[Indentation
+attila.lendvai@gmail.com**20070319170840] 

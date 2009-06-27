@@ -1,0 +1,13 @@
+Starting with tag:
+[TAG 2008-11-27
+attila.lendvai@gmail.com**20081127150542
+ Ignore-this: 2a6e69e40bb480dd127d19a9b286ae1
+] 
+[disable slime inspector customizations on the non-dwim branch of slime. it's bitrotten on slime head...
+attila.lendvai@gmail.com**20090319113524
+ Ignore-this: cd1a7d9d10700bef3577a479f900375
+] 
+[small change to in-suite/defsuite
+attila.lendvai@gmail.com**20090319113640
+ Ignore-this: 35269adda41f449ed5c9689ee21d2ba8
+] 
