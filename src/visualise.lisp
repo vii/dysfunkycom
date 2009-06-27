@@ -37,7 +37,6 @@
 	      (score fuel x y &rest rest)
 	   (coerce oport 'list)
 	  (declare (ignore fuel rest))
-	  (cl-user::debug-state x y)
 	  (check-type x double-float)
 	  (cond ((zerop score)
 		 (list (make-visat :name "dysfunc" :sx x :sx y)))
