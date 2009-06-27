@@ -80,7 +80,7 @@ Outputs: a list of double-floats
 	       (approximately-equal
 		(d x y)
 		r
-		0.0000001))))
+		0.00000001))))
     (multiple-value-bind (x y)
 	(position-and-direction sim)
       (multiple-value-bind (init-dv end-dv)
@@ -189,13 +189,27 @@ To see the earth disappear
 			(calc-angle-between-vectors
 			 (vec x y)
 			 (vec (- xo x) (- yo y))))))
-
 		  (when (approximately-equal angle-to-opponent
 					     triggering-angle
-					     0.0001)
+					     0.001)
 		    (leave))))))
+      (print 'leave)
       ;; 2. hohmann
-      (problem-1-controller sim target-radius))))
+      (problem-1-controller sim target-radius)
+      ;; 3. feedback loop for adjustment
+      (iter (with dVx = 0d0)
+	    (with dVy = 0d0)
+	    (for output = (sim-step sim dVx dVy))
+	    (setf dVx 0d0
+		  dVy 0d0)
+	    (destructuring-array-bind (score nil nil nil xo yo) output
+	      (when (not (zerop score))
+		(leave))
+	      (print (list xo yo))
+	      (setf dVx xo
+		    dVy yo)))
+      ;; return val
+      (values (reverse (sim-thrusts sim)) (sim-time sim)))))
 
 ;;; previous implementation
 ;;; not used now
