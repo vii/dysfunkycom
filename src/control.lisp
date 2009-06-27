@@ -45,13 +45,20 @@ Outputs: a list of double-floats
       r)))
 
 (defun position-and-direction (sim)
-  (position-and-direction-target sim 2))
+  (let ((simulator (make-simple-simulator-func (copy-sim sim))))
+    (destructuring-array-bind (nil nil x0 y0)
+	(funcall simulator)
+      (destructuring-array-bind (nil nil x1 y1)
+	  (funcall simulator)
+	(values x0 y0 (- x1 x0) (- y1 y0))))))
 
 (defun position-and-direction-target (sim &optional (target-offset 4))
   (let ((simulator (make-simple-simulator-func (copy-sim sim))))
     (flet ((pos ()
 	    (let ((oport (funcall simulator)))
-	      (values (elt oport target-offset) (elt oport (1+ target-offset))))))
+	      (destructuring-array-bind (nil nil x y)
+					oport
+					(values (- (elt oport target-offset) x) (- (elt oport (1+ target-offset)) y))))))
       (multiple-value-bind (x0 y0)
 	  (pos)
 	(multiple-value-bind (x1 y1)
