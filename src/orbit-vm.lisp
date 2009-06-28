@@ -182,8 +182,15 @@
       sim
     (setf (elt input-port 2) ax
 	  (elt input-port 3) ay)
-    (unless (and (zerop ax) (zerop ay))
-      (push `(,time ,@(unless (zerop ax) `((2 ,ax))) ,@(unless (zerop ay) `((3 ,ay)))) thrusts))
+    (if (and (zerop ax) (zerop ay))
+	(when (equalp (1- time) (first (first thrusts)))
+	(let ((resets (loop for (reg val) in (rest (first thrusts))
+			    when (and (>= 3 reg) (not (zerop val)))
+			    collect `(,reg 0d0))))
+	  (when resets
+	    (push `(,time ,@resets) thrusts))))
+	(push `(,time ,@(unless (zerop ax) `((2 ,ax))) ,@(unless (zerop ay) `((3 ,ay)))) thrusts)
+      )
     (funcall program memory input-port output-port)
     (incf time)
     output-port))
