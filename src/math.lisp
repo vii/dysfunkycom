@@ -135,6 +135,19 @@
 	   (* a (cos angle) (sin phi))
 	   (* b (sin angle) (cos phi)))))
 
+;; (defun rotate-vector (vec alpha)
+;;   (let ((x (first vec)) (y (second vec))
+;; 	(s (sin alpha)) (c (cos alpha)))
+;; ;;     (list (+ (* c x) (* s y)) (- (* c y) (* s x)))
+;;     (list (- (* c x) (* s y)) (+ (* s x) (* c y)))
+;;     ))
+
+;; (defun apogees (ellipse)
+;;   (destructuring-bind (center a b phi) ellipse
+;;     (declare (ignore b))
+;;     (list (v+ center (rotate-vector (list a 0) phi))
+;; 	  (v+ center (rotate-vector (list (- a) 0) phi)))))
+
 (defun generate-ellipse-test-points (center a b phi n)
   "Generates N random ellipse points."
   (iter (repeat n)
