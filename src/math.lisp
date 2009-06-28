@@ -64,11 +64,12 @@
 (defun d (x y)
   (sqrt (+ (^2 x) (^2 y))))
 
-
-;;; Ellipse fitting
 (declaim (inline angle))
 (defun angle (x y)
   (atan y x))
+
+
+;;; Ellipse fitting
 
 (defun estimate-ellipse (xy-pairs)
   "This function needs at least 6 pairs, the more the better \(and the slower)."
@@ -81,38 +82,44 @@
 		'(0 1 2 3 4) (list (* x x) (* x y) (* y y) x y)))
     (lu-solver:least-squares A b)))
 
-;;; Commented lines are for reverse rotation
-(defun rotate-vector (vec alpha)
-  (let ((x (first vec)) (y (second vec))
-	(c (cos alpha)) (s (sin alpha)))
-;;     (list (+ (* c x) (* s y)) (- (* c y) (* s x)))
-    (list (- (* c x) (* s y)) (+ (* s x) (* c y)))
-    ))
+(defun centralise-ellipse (a b c d e)
+  (let* ((x (/ (- (* 2 c d) (* b e)) (- (* b b) (* 4 a c))))
+	 (y (/ (- (* 2 a e) (* b d)) (- (* b b) (* 4 a c))))
+	 (f (- 1 (* a x x) (* b x y) (* c y y) (* d x) (* e y))))
+    (values (list x y) (list (/ a f) (/ b f) (/ c f)))))
 
-;;; Commented lines are for reverse rotation
+#+nil ; this one is for reverse rotation
+(defun straighten-ellipse (a b c)
+  (if (< (min (abs (/ b a)) (abs (/ b c))) 1d-5)
+      (values 0 (list a c))
+      (let* ((phi (/ (atan b (- a c)) -2))
+	     (cos (cos phi))
+	     (sin (sin phi))
+	     (a (+ (* a cos cos) (- (* b cos sin)) (* c sin sin)))
+	     (c (+ (* a sin sin) (* b cos sin) (* c cos cos))))
+	(values phi (list a c)))))
+
+(defun straighten-ellipse (a b c)
+  (if (< (min (abs (/ b a)) (abs (/ b c))) 1d-5)
+      (values 0 (list a c))
+      (let* ((phi (/ (atan b (- c a)) -2))
+	     (cos (cos phi))
+	     (sin (sin phi))
+	     (a (+ (* a cos cos) (* b cos sin) (* c sin sin)))
+	     (c (+ (* a sin sin) (- (* b cos sin)) (* c cos cos))))
+	(values phi (list a c)))))
+
+(defun normalise-ellipse-scale (a c)
+  (list (/ (sqrt a)) (/ (sqrt c))))
+
 (defun ellipse-from-quadratic (coefficients)
-  (destructuring-bind (a b c d e) (coerce coefficients 'list)
-    (flet ((ellipse (a c d e phi)
-	     (let ((f (+ 1 (/ (* d d) (* 4 a)) (/ (* e e) (* 4 c)))))
-	       (list (rotate-vector (list (/ d (* -2 a)) (/ e (* -2 c))) phi)
-		     (sqrt (abs (/ f a))) (sqrt (abs (/ f c))) phi))))
-      (if (< (min (abs (/ b a)) (abs (/ b c))) 1d-5)
-	  (ellipse a c d e 0d0)
-	  (let* (
-;; 		 (phi (/ (atan b (- c a)) 2))
-		 (phi (/ (atan b (- a c)) 2))
-		 (cos (cos phi))
-		 (sin (sin phi))
-;; 		 (a (+ (* a cos cos) (- (* b cos sin)) (* c sin sin)))
-;; 		 (c (+ (* a sin sin) (* b cos sin) (* c cos cos)))
-;; 		 (d (- (* d cos) (* e sin)))
-;; 		 (e (+ (* d sin) (* e cos)))
-		 (a (+ (* a cos cos) (* b cos sin) (* c sin sin)))
-		 (c (+ (* a sin sin) (- (* b cos sin)) (* c cos cos)))
-		 (d (+ (* e sin) (* d cos)))
-		 (e (- (* e cos) (* d sin)))
-		 )
-	    (ellipse a c d e phi))))))
+  (multiple-value-bind (center coefficients)
+      (apply #'centralise-ellipse (coerce coefficients 'list))
+    (multiple-value-bind (phi coefficients)
+	(apply #'straighten-ellipse coefficients)
+      (destructuring-bind (a b)
+	  (apply #'normalise-ellipse-scale coefficients)
+	(list center a b phi)))))
 
 (defun ellipse-point (center a b phi angle)
   (list (+ (first center)
@@ -127,3 +134,16 @@
   (iter (repeat n)
 	(for alpha = (random (* 2 pi)))
 	(collect (ellipse-point center a b phi alpha))))
+
+(defun generate-ellipse-test-files (center a b phi &optional (n 6))
+  (let ((points1 (generate-ellipse-test-points center a b phi 500))
+	(points2 (generate-ellipse-test-points center a b phi n)))
+    (with-open-file (s "/tmp/ellipse" :direction :output :if-exists :supersede)
+      (format s "~{~{~f~^ ~}~%~}" points1))
+    (with-open-file (s "/tmp/ellipse2" :direction :output :if-exists :supersede)
+      (format s "~{~{~f~^ ~}~%~}"
+	      (apply #'generate-ellipse-test-points
+		     (append (ellipse-from-quadratic (estimate-ellipse points2))
+			     '(500)))))))
+
+;;; (generate-ellipse-test-files '(3 4) 2.3 1.7 (/ pi 6))
