@@ -37,6 +37,10 @@
 (defun normalize-angle (angle)
   (mod angle (* 2 pi)))
 
+;; Angular velocity should keep the sign . . .
+(defun normalize-vangle (angle)
+  (- (mod (+ pi angle) (* 2 pi)) pi))
+
 (defun calc-angle-between-vectors (v1 v2)
   (let* ((v1 (normalize-vector v1))
 	 (v2 (normalize-vector v2)) 
