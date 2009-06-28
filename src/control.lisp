@@ -232,12 +232,10 @@ To see the earth disappear
       ;; return val
       (values (reverse (sim-thrusts sim)) (sim-time sim)))))
 
-(defun enemy-semi-major-axis (sim)
-  (let ((points (iter (for output = (funcall sim))
-		      (repeat 15)
-		      (for x = (aref output 2)) (for y = (aref output 3))
-		      (for tx = (aref output 4)) (for ty = (aref output 5))
-		      (collect (list (- tx x) (- ty y))))))
+(defun enemy-semi-major-axis (sim &key (step 1))
+  (let ((points (iter 
+		 (for i below 15)
+		 (collect (multiple-value-list (sim-pos-at-time sim (sim-target sim) (* i step)))))))
     (destructuring-bind (center a b phi)
 	(ellipse-from-quadratic (estimate-ellipse points))
       (declare (ignore center phi))
@@ -246,7 +244,7 @@ To see the earth disappear
 (defun enemy-position-later (sim n)
   (iter (repeat (1- n)) (funcall sim))
   (destructuring-array-bind (nil nil x y tx ty) (funcall sim)
-    (list (- tx x) (- ty y))))
+    (list (- x tx) (- y ty))))
 
 (defun full-hohmann-time (x0 y0 e-x e-y sim)
   (list (iter (for output = (sim-step sim))
@@ -262,7 +260,7 @@ To see the earth disappear
   (prog1 (iter (with (x y) = (destructuring-array-bind (nil nil x y)
 				 (funcall (make-simple-simulator-func (copy-sim sim)))
 			       (list x y)))
-	       (with enemy-period = (orbital-period (enemy-semi-major-axis (make-simple-simulator-func (copy-sim sim)))))
+	       (with enemy-period = (orbital-period (enemy-semi-major-axis (copy-sim sim))))
 	       (with our-period = (orbital-period (d x y)))
 	       (for i from iterations above 0)
 	       (format t "~d..." i)
@@ -287,10 +285,18 @@ To see the earth disappear
 (defun problem-3-controller (sim)
   (destructuring-bind (target-radius wait) (estimate-target-radius-iteratively sim)
     (format t "~d ~d~%" target-radius wait)
+    (cl-user::debug-state (sat-r (sim-us sim)) (orbital-period (sat-r (sim-us sim)))
+			  (sim-time sim))
+
     (push (list 0 0 target-radius) *show-orbits*)
     (iter (repeat wait) (sim-step sim))
     ;; TODO: get on ellipse orbit instead
     (problem-1-controller sim target-radius)
+    
+    (cl-user::debug-state (sat-angle (sim-us sim))
+			  (sat-angle (sim-target sim))
+			  )
+
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
 ;;; previous implementation
