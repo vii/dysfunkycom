@@ -216,3 +216,10 @@
      (visualise
       (funcall visualiser-func (make-simple-simulator-func sim) (or frames (when controller (funcall controller (copy-sim sim)))))))))
 
+(defun visualise-submission (filename)
+  (multiple-value-bind (frames scenario team) (read-submission filename)
+    (declare (ignore team))
+    (let* ((visualiser-func (visualiser-for-scenario scenario))
+	   (file (file-for-scenario scenario))
+	   (sim (make-simulator file scenario)))
+      (visualise (funcall visualiser-func (make-simple-simulator-func sim) frames)))))
