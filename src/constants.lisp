@@ -5,3 +5,5 @@
 (defconstant +radius-earth+ 6.357d6)
 
 (defconstant +G-m-earth+ (* +G+ +m-earth+))
+
+(defconstant +m-moon+ 7.347d22)
