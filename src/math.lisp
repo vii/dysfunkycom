@@ -109,6 +109,8 @@
 	     (c (+ (* a sin sin) (- (* b cos sin)) (* c cos cos))))
 	(values phi (list a c)))))
 
+;;; TODO: This seems to give the wrong values
+;;; The problem is that rotation changes a,b.
 (defun normalise-ellipse-scale (a c)
   (list (/ (sqrt a)) (/ (sqrt c))))
 
