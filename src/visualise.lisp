@@ -1,5 +1,7 @@
 (in-package #:dysfunkycom)
 
+(defparameter *show-orbits* nil "A list of orbits to be displayed.")
+
 (defstruct visat
   (sx 0d0 :type double-float)
   (sy 0d0 :type double-float)
@@ -45,11 +47,12 @@
 	 (incf time)
 	 (when oport
 	   (destructuring-array-bind 
-	     (score fuel x y)
+	     (score fuel x y tx ty)
 	     oport
 	     (declare (ignore fuel))
 	     (check-type x double-float)
-	     
+	     (when (= time 1)
+	       (setf *show-orbits* (list (list 0 0 (norm (vec x y))) (list 0 0 (norm (vec tx ty))))))
 	     (cond ((zerop score)
 		    (list (make-visat :name "dysfunc" :sx x :sy y)))
 		   (t 
@@ -76,7 +79,6 @@
 	    oport
 	    (declare (ignore fuel))
 	    (check-type x double-float)
-	     
 	    (cond ((zerop score)
 		   (list (make-visat :name "dysfunc" :sx x :sy y)
 			 (make-visat :name "target" :sx (- x tx) :sy (- y ty) :color sdl:*green*)))
@@ -172,6 +174,9 @@
 	     (draw ()
 	       (sdl:clear-display (if (crashing-into-earth) sdl:*red* sdl:*black*))
 	       (rescale)
+	       (iter (for (x y r) in *show-orbits*)
+		     (sdl:draw-circle-* (xform-x x) (xform-y y) (xform-radius r)
+					:color (sdl:color :r 255 :g 255 :b 0)))
 	       (sdl:draw-filled-circle-* (xform-x 0) (xform-y 0)
 					 (xform-radius earth-radius)
 					 :color earth-color)
@@ -247,8 +252,17 @@
 
 (defun visualise-scenario (scenario &key frames (controller (controller-for-scenario scenario)) 
 			   (visualiser-func (visualiser-for-scenario scenario)) (file (file-for-scenario scenario)))
-  (let ((scenario (coerce scenario 'double-float)))
-   (let ((sim (make-simulator file scenario)))
-     (visualise
-      (funcall visualiser-func (make-simple-simulator-func sim) (or frames (when controller (funcall controller (copy-sim sim)))))))))
+  (let* ((scenario (coerce scenario 'double-float))
+	 (sim (make-simulator file scenario))
+	 (*show-orbits* nil))
+    (visualise
+     (funcall visualiser-func (make-simple-simulator-func sim) (or frames (when controller (funcall controller (copy-sim sim))))))))
 
+(defun visualise-submission (filename)
+  (multiple-value-bind (frames scenario team) (read-submission filename)
+    (declare (ignore team))
+    (let* ((visualiser-func (visualiser-for-scenario scenario))
+	   (file (file-for-scenario scenario))
+	   (sim (make-simulator file scenario))
+	   (*show-orbits* nil))
+      (visualise (funcall visualiser-func (make-simple-simulator-func sim) frames)))))

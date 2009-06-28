@@ -89,7 +89,7 @@ Outputs: a list of double-floats
 	  (hohmann (d x y) r)
 	(declare (ignorable end-dv))
 	(boost (- init-dv))
-	(loop repeat (round (- estimated-time 2))
+	(loop repeat (- (round estimated-time) 2)
 	      for output = (sim-step sim)
 	      ;; until (done?)
 	      finally (return output))
