@@ -21,9 +21,9 @@
 
 (defun draw-sat-radius (sat)
   (case (sat-name sat)
-    (:us 200000)
+    (:us 600000)
     (:moon 1737400)
-    (t 100000)))
+    (t 400000)))
 
 (defun visualise (sim &key (earth-color (sdl:color :r 20 :g 100 :b 100))
 		  frames
@@ -55,7 +55,7 @@
 	       (round (let ((height window-height))
 			(+ (/ height 2) (/ y (window-scale))))))
 	     (xform-radius (r)
-	       (ceiling r (window-scale)))
+	       (max 2 (ceiling r (window-scale))))
 	     (next-step ()
 	       (loop repeat (if playing (+ playing-steps (* time playing-time-scale)) 1) do
 		     (one-step)))
@@ -89,7 +89,8 @@
 	       (sdl:draw-filled-circle-* (xform-x 0) (xform-y 0)
 					 (xform-radius earth-radius)
 					 :color earth-color)
-	       (loop for sat across (sim-sats sim) do
+	       (loop for i downfrom (1- (length (sim-sats sim))) to 0 
+		     for sat = (elt (sim-sats sim) i) do
 		     (sdl:draw-filled-circle-* (xform-x (sat-x sat)) (xform-y (sat-y sat))
 					       (xform-radius (draw-sat-radius sat))
 					       :color (sat-color sat))

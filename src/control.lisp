@@ -96,7 +96,7 @@ Outputs: a list of double-floats
 	(multiple-value-bind (_ __ vx vy)
 	    (position-and-direction sim)
 	  (declare (ignorable _ __))
-	  (boost (- (d vx vy) (sqrt (/ +g-m-earth+ r)))))
+	  (boost (- (d vx vy) (sqrt (/ +g-m-earth+ r))))) 
 	(values (reverse (sim-thrusts sim)) (sim-time sim))))))
 
 (defun problem-1-controller-burn (sim &key (r (problem-1-target-radius sim)) (fuel 9000))
@@ -197,7 +197,7 @@ To see the earth disappear
   (multiple-value-bind (x0 y0 vx0 vy0)
       (position-and-direction-target sim)
     (multiple-value-bind (hohmann-time init-angle end-angle _ target-radius)
-	(problem-2-calc-jump sim)
+	(problem-2-calc-jump sim) 
       (declare (ignorable _))
       ;; 1. wait to the right position
       (let* ((radius (d x0 y0))
@@ -217,14 +217,17 @@ To see the earth disappear
 			 (vec (- x xo) (- y yo))))))
 		  (when (approximately-equal angle-to-opponent
 					     triggering-angle
-					     0.00001)
+					     0.0001)
 		    (leave))))))
       (print 'leave)
+
       ;; 2. hohmann
+
       (problem-1-controller sim target-radius)
+
       ;; 3. feedback loop for adjustment
       
-      ;(problem-2-chaser sim)
+					;(problem-2-chaser sim)
 
       ;; return val
       (values (reverse (sim-thrusts sim)) (sim-time sim)))))
@@ -386,3 +389,63 @@ To see the earth disappear
 	(format t "~&Time spent: ~a seconds~%" (length thrusts))
 	(format t "~&Satellite failed with program error: ~a~%" c) 
 	(nreverse thrusts)))))
+
+
+
+(defun circular-orbit-appraoching-method-controller (sim &key (seconds-between-impulse 10))
+  (labels ((run ()
+	     (multiple-value-bind (xt0 yt0 vxt0 vyt0)
+		 (position-and-direction-target sim)
+	       (multiple-value-bind (x0 y0 vx0 vy0)
+		   (position-and-direction sim)
+		 (let* ((r (d x0 y0))
+			(rt (d xt0 yt0))
+			(dr (- rt r))
+			(d-theta (calc-angle-between-vectors (vec x0 y0) (vec xt0 yt0)))
+			(d-omega (- (/ (norm (vec vx0 vy0)) r)
+				    (/ (norm (vec vxt0 vyt0)) rt)))
+			(catch-up-time (/ d-theta d-omega)))
+		   (declare (ignorable r rt dr d-theta d-omega catch-up-time))
+		   ;; TODO: think about cases that d-theta > pi, and r > rt
+		   (multiple-value-bind (xte0 yte0 vxte0 vyte0)
+		       (estimate-satellite-states xt0 yt0 vxt0 vyt0 0d0 0d0 seconds-between-impulse)
+		     (let* ((direction (normalize-vector (v- (vec xte0 yte0) (vec x0 y0))))
+			    (distance (d (- xt0 x0) (- yt0 y0))) 
+			    (delta-V (d (- vxt0 vx0) (- vyt0 vy0)))
+			    (k1 1d0)
+			    (k2 1d0)
+			    (a 1d0)
+			    (b 1d0)
+			    (g_v (* k1 (if (> delta-V 0d0) (sqrt delta-V) (- (sqrt delta-V)))))
+			    (t-esti (* 2d0 (/ delta-V g_v)))
+			    (f_dis (* k2 (sqrt (/ distance t-esti))))
+			    (accel-wanted (vscale direction (+ (* a g_v) (* b f_dis)))) 
+			    (g (vscale (normalize-vector (vec (- x0) (- y0)))
+				       (/ +g-m-earth+ (^2 r))))
+			    (accel-to-apply (v- accel-wanted g)))
+		       (assert (>= t-esti 0d0))
+		       (format t "~&~%Simulation Time: ~a~{~&~a : ~a~}~%"
+			       (sim-time sim)
+			       (list :satellite-pos (vec x0 y0)
+				     :target-pos (vec xt0 yt0)
+				     :satellite-speed (vec vx0 vy0)
+				     :target-speed (vec vxt0 vyt0)
+				     :estimated-next-target-position (vec xte0 yte0)
+				     :estimated-next-target-speed (vec vxte0 vyte0)
+				     :direction direction
+				     :distance distance
+				     :delta-V delta-V
+				     :g_v g_v
+				     :t-esti t-esti
+				     :f_dis f_dis
+				     :accel-wanted accel-wanted
+				     :g g
+				     :accel-to-apply accel-to-apply
+				     )) 
+		       (sim-step sim (vx accel-to-apply) (vy accel-to-apply))
+		       (loop repeat (1- seconds-between-impulse)
+			     while (zerop (sim-score sim))
+			     do (sim-step sim 0d0 0d0)))))))))
+    (loop do (run)
+	  until (not (zerop (sim-score sim))))
+    (values (reverse (sim-thrusts sim)) (sim-time sim))))

@@ -18,13 +18,14 @@
 				     (:file "matrix")
 				     (:file "lu" :depends-on ("matrix"))
 				     #-darwin (:file "visualise" :depends-on ("physics" "macros" "submission"))
-				     (:file "orbit-vm" :depends-on ("package"))
+				     (:file "orbit-vm" :depends-on ("package" "macros" "math"))
 				     (:file "constants" :depends-on ("package"))
 				     (:file "math" :depends-on ("package" "lu"))
 				     (:file "macros" :depends-on ("package"))
 				     (:file "physics" :depends-on ("constants"))
 				     (:file "submission" :depends-on ("constants" "orbit-vm"))
 				     (:file "control" :depends-on ("physics" "macros"))
+				     (:file "control-superburn" :depends-on ("control"))
 				     )))
 
   :depends-on (
