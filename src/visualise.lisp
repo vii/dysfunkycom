@@ -131,9 +131,10 @@
 
 (defun visualise (func &key (earth-color (sdl:color :r 20 :g 100 :b 100)) 
 		  (earth-radius +radius-earth+) (visat-radius 2)
-		  (window-width 1000) (window-height 1000) (playing-steps 100))
+		  (window-width 0) (window-height 0) (playing-steps 100)
+		  (playing-time-scale 0.0001d0))
   (declare (optimize debug safety))
-  (let* (satspos (time 0) (scale (* 2 +radius-earth+)) playing)
+  (let* (satspos (time 0) (scale (* 2 +radius-earth+)) playing window)
     (labels (
 	     (rescale ()
 	       (labels ((max-one (func)
@@ -148,16 +149,16 @@
 				       ,var)))))
 		   (setf scale (max (maybe-scale scale #'visat-sx) (maybe-scale scale #'visat-sy))))))
 	     (xform-x (x)
-	       (round (let ((width (sdl:width sdl:*default-display*)))
+	       (round (let ((width (sdl:width window)))
 			(/ (+ width (* (/ x scale) width)) 2d0))))
 	     (xform-y (y)
-	       (round (let ((height (sdl:height sdl:*default-display*)))
+	       (round (let ((height (sdl:height window)))
 			(/ (+ height (* (/ y scale) height)) 2d0))))
 	     (xform-radius (r)
-	       (round (let ((dim (max (sdl:width sdl:*default-display*) (sdl:height sdl:*default-display*))))
+	       (round (let ((dim (max (sdl:width window) (sdl:height window))))
 			(* (/ r scale 2) dim))))
 	     (next-step ()
-	       (loop repeat (if playing playing-steps 1) do
+	       (loop repeat (if playing (+ playing-steps (* time playing-time-scale)) 1) do
 		     (one-step)))
 	     (one-step ()
 	       (setf satspos (funcall func))
@@ -189,21 +190,29 @@
 					  :fg-color (sdl:any-color-but-this (visat-color visat))
 					  :bg-color (visat-color visat))
 		     )
-	       (visualise-draw-text (format nil "step = ~A scale = ~A" time scale))
-	       (sdl:update-display)))
+	       (visualise-draw-text (format nil "T = ~A scale = ~,3E log10scale = ~D" time scale (round (log scale 10))))
+	       (sdl:update-display))
+	     (window ()
+	       (setf window (sdl:window window-width window-height
+				  :title-caption "dysfunkycom"
+				  :icon-caption "ICFP 2009"
+				  :flags '(sdl:sdl-resizable)))
+	       	(unless window
+		  (error "~&Unable to create a SDL window~%"))
+		window))
       (sdl:with-init ()
 	(sdl:initialise-default-font sdl:*font-10x20*)
-	(unless (sdl:window window-width window-height
-			    :title-caption "dysfunkycom"
-			    :icon-caption "ICFP 2009"
-			    :flags '(sdl:sdl-hw-surface sdl:sdl-resizable))
-	  (error "~&Unable to create a SDL window~%"))
+	(window)
 	(setf (sdl:frame-rate) 0)
 
 	;; Enable key repeat. Set to default values.
 	(sdl:enable-key-repeat nil nil)
 	(sdl:with-events ()
 	  (:quit-event () t)
+	  (:video-resize-event (:w w :h h)
+			       (setf window-width w
+				     window-height h)
+			       (window))
 	  (:key-down-event
 	    (:key key)
 	    (cond 
