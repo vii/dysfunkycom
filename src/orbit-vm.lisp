@@ -218,6 +218,7 @@
       
       (cond ((> scenario 4000)
 	     (add (make-sat :name :fuel :oport-offset 4 :done t))
+	     (add (make-sat :name :moon :oport-offset #x64 :done t))
 	     (loop for k below 12
 		   do (add (make-sat :name k :oport-offset (+ 7 (* 3 k))))))
 	    ((> scenario 2000)

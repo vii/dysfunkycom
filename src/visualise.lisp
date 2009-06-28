@@ -16,11 +16,18 @@
   (case (sat-name sat)
     (:us sdl:*red*)
     (:fuel sdl:*blue*)
+    (:moon sdl:*yellow*)
     (t sdl:*green*)))
+
+(defun draw-sat-radius (sat)
+  (case (sat-name sat)
+    (:us 200000)
+    (:moon 1737400)
+    (t 100000)))
 
 (defun visualise (sim &key (earth-color (sdl:color :r 20 :g 100 :b 100))
 		  frames
-		  (earth-radius +radius-earth+) (sat-radius 2)
+		  (earth-radius +radius-earth+) 
 		  (window-width *visualise-window-width*) (window-height *visualise-window-height*) (playing-steps 100)
 		  (playing-time-scale 0.0001d0))
   (declare (optimize debug safety))
@@ -48,7 +55,7 @@
 	       (round (let ((height window-height))
 			(+ (/ height 2) (/ y (window-scale))))))
 	     (xform-radius (r)
-	       (round r (window-scale)))
+	       (ceiling r (window-scale)))
 	     (next-step ()
 	       (loop repeat (if playing (+ playing-steps (* time playing-time-scale)) 1) do
 		     (one-step)))
@@ -84,7 +91,7 @@
 					 :color earth-color)
 	       (loop for sat across (sim-sats sim) do
 		     (sdl:draw-filled-circle-* (xform-x (sat-x sat)) (xform-y (sat-y sat))
-					       sat-radius
+					       (xform-radius (draw-sat-radius sat))
 					       :color (sat-color sat))
 		     #- (and) (visualise-draw-text (format nil "~A ~,3E" (sat-name sat) (sat-r sat))
 					  :x (xform-x (sat-x sat)) :y (xform-y (sat-y sat))
@@ -100,6 +107,8 @@
 				  :flags '(sdl:sdl-resizable)))
 	       	(unless window
 		  (error "~&Unable to create a SDL window~%"))
+		(setf window-width (sdl:width window)
+		      window-height (sdl:height window))
 		window))
       (sdl:with-init ()
 	(sdl:initialise-default-font sdl:*font-10x20*)
