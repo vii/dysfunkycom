@@ -85,6 +85,41 @@
 		    nil)))))))))
 
 
+(defun make-visualise-oport-4 (func &optional frames)
+  (let ((time 0) (frame (pop frames)))
+   (lambda ()
+     (let ((ax 0d0) (ay 0d0))
+       (when (and frame (= time (first frame)))
+	 (loop for (control val) in (rest frame)
+	       do (cond 
+		    ((= control 2) (setf ax val))
+		    ((= control 3) (setf ay val))
+		    (t (assert (= #x3e80 control))
+		       (assert (zerop time)))))
+	 (setf frame (pop frames)))
+       (let ((oport (funcall func ax ay)))
+	 (incf time)
+	 (when oport
+	   (destructuring-array-bind 
+	    (score fuel x y fx fy)
+	    oport
+	    (declare (ignore fuel))
+	    (check-type x double-float)
+	     
+	    (cond ((zerop score)
+		   (let ((sats (list 
+				(make-visat :name "dysfunc" :sx x :sy y) 
+				(make-visat :name "fuel" :sx (- x fx) :sy (- y fy) :color sdl:*blue*)
+				(make-visat :name "moon" :sx ( - x (elt oport #x64)) :sy ( - y (elt oport #x65)) :color sdl:*yellow*)
+				))) 
+			 (loop for k below 12
+			       do (push (make-visat :name (format nil "~A" k) :sx (- x (elt oport (+ 7 (* 3 K))))
+						    :sy (- y (elt oport (+ 8 (* 3 K))))  :color sdl:*green*) sats))
+			 sats
+			 ))
+		  (t 
+		    (format *debug-io* "Finishing because score is ~A~%" score)
+		    nil)))))))))
 
 (defun visualise-draw-text (text &key (x 10) (y 10) (font sdl:*default-font*) (surface sdl:*default-surface*) (fg-color sdl:*white*) (bg-color sdl:*black*))
   (sdl:render-string-shaded text 
@@ -93,7 +128,7 @@
   (sdl:draw-font-at-* x y :font font :surface surface))
 
 (defun visualise (func &key (earth-color (sdl:color :r 20 :g 100 :b 100)) 
-		  (earth-radius +radius-earth+) (visat-radius 10)
+		  (earth-radius +radius-earth+) (visat-radius 2)
 		  (window-width 1000) (window-height 1000) (playing-steps 100))
   (declare (optimize debug safety))
   (let* (satspos (time 0) (scale (* 2 +radius-earth+)) playing)
@@ -105,9 +140,9 @@
 		 (macrolet ((maybe-scale (var func)
 			      (with-gensyms (real-scale)
 				`(let ((,real-scale (coerce (max-one ,func) 'double-float)))
-				   (if (or (> ,var (* 4 ,real-scale))
-					   (< ,var (* 2 ,real-scale)))
-				       (+ 1 (* 3 ,real-scale))
+				   (if (or (> ,var (* 1.5 ,real-scale))
+					   (< ,var (* 1.2 ,real-scale)))
+				       (+ 1 (* 1.3 ,real-scale))
 				       ,var)))))
 		   (setf scale (max (maybe-scale scale #'visat-sx) (maybe-scale scale #'visat-sy))))))
 	     (xform-x (x)
@@ -144,7 +179,7 @@
 		     (sdl:draw-filled-circle-* (xform-x (visat-sx visat)) (xform-y (visat-sy visat))
 					       visat-radius
 					       :color (visat-color visat))
-		     (visualise-draw-text (format nil "~A ~,3E" (visat-name visat) (d (visat-sx visat) (visat-sy visat)))
+		     #- (and) (visualise-draw-text (format nil "~A ~,3E" (visat-name visat) (d (visat-sx visat) (visat-sy visat)))
 					  :x (xform-x (visat-sx visat)) :y (xform-y (visat-sy visat))
 					  :fg-color (sdl:any-color-but-this (visat-color visat))
 					  :bg-color (visat-color visat))
@@ -190,14 +225,15 @@
 (defun controller-for-scenario (scenario)
   (cond ((> 2000 scenario) 
 	 'problem-1-controller)
-	(t
+	((> 3000 scenario)
 	 'problem-2-controller)))
 
 (defun visualiser-for-scenario (scenario)
   (cond ((> 2000 scenario) 
 	 'make-visualise-oport-1)
-	(t
-	 'make-visualise-oport-2)))
+	((> 3000 scenario)
+	 'make-visualise-oport-2)
+	(t 'make-visualise-oport-4)))
 
 (defvar *orbit-code-dir* 
   (with-standard-io-syntax (format nil "~A/../orbit-code/"  
