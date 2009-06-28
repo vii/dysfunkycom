@@ -229,6 +229,31 @@ To see the earth disappear
       ;; return val
       (values (reverse (sim-thrusts sim)) (sim-time sim)))))
 
+(defun enemy-radius-later (sim n)
+  (iter (repeat (1- n)) (funcall sim))
+  (destructuring-array-bind (nil nil x y tx ty) (funcall sim)
+    (d (- tx x) (- ty y))))
+
+(defun estimate-target-radius-iteratively (sim &optional (iterations 10))
+  (iter (repeat iterations)
+	(with our-radius = (destructuring-array-bind (nil nil x y)
+			       (funcall (make-simple-simulator-func (copy-sim sim)))
+			     (d x y)))
+	(for time first 1 then hohmann-time)
+	(for simulator = (make-simple-simulator-func (copy-sim sim)))
+	(for radius = (enemy-radius-later simulator time))
+	(for hohmann-time = (multiple-value-bind (dv1 dv2 secs)
+				(hohmann our-radius radius)
+			      (declare (ignore dv1 dv2))
+			      secs))
+	(setf *show-orbits* (list (list 0 0 radius)))
+	(finally (return radius))))
+
+(defun problem-3-controller (sim)
+  (let ((target-radius (estimate-target-radius-iteratively sim)))
+    (problem-1-controller sim target-radius))
+  (values (reverse (sim-thrusts sim)) (sim-time sim)))
+
 ;;; previous implementation
 ;;; not used now
 (defun hohmann-controller (sim)

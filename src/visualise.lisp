@@ -86,6 +86,32 @@
 		    (format *debug-io* "Finishing because score is ~A~%" score)
 		    nil)))))))))
 
+(defun make-visualise-oport-3 (func &optional frames)
+  (let ((time 0) (frame (pop frames)))
+   (lambda ()
+     (let ((ax 0d0) (ay 0d0))
+       (when (and frame (= time (first frame)))
+	 (loop for (control val) in (rest frame)
+	       do (cond 
+		    ((= control 2) (setf ax val))
+		    ((= control 3) (setf ay val))
+		    (t (assert (= #x3e80 control))
+		       (assert (zerop time)))))
+	 (setf frame (pop frames)))
+       (let ((oport (funcall func ax ay)))
+	 (incf time)
+	 (when oport
+	   (destructuring-array-bind 
+	    (score fuel x y tx ty)
+	    oport
+	    (declare (ignore fuel))
+	    (check-type x double-float)
+	    (cond ((zerop score)
+		   (list (make-visat :name "dysfunc" :sx x :sy y)
+			 (make-visat :name "target" :sx (- x tx) :sy (- y ty) :color sdl:*green*)))
+		  (t 
+		    (format *debug-io* "Finishing because score is ~A~%" score)
+		    nil)))))))))
 
 (defun make-visualise-oport-4 (func &optional frames)
   (let ((time 0) (frame (pop frames)))
@@ -243,13 +269,17 @@
   (cond ((> 2000 scenario) 
 	 'problem-1-controller)
 	((> 3000 scenario)
-	 'problem-2-controller)))
+	 'problem-2-controller)
+	((> 4000 scenario)
+	 'problem-3-controller)))
 
 (defun visualiser-for-scenario (scenario)
   (cond ((> 2000 scenario) 
 	 'make-visualise-oport-1)
 	((> 3000 scenario)
 	 'make-visualise-oport-2)
+	((> 4000 scenario)
+	 'make-visualise-oport-3)
 	(t 'make-visualise-oport-4)))
 
 (defvar *orbit-code-dir* 
