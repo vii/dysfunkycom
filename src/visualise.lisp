@@ -152,7 +152,9 @@
   (cond ((> 2000 scenario) 
 	 'problem-1-controller)
 	((> 3000 scenario)
-	 'problem-2-controller)))
+	 'problem-2-controller)
+	((> 4000 scenario)
+	 'problem-3-controller)))
 
 (defvar *orbit-code-dir* 
   (with-standard-io-syntax (format nil "~A/../orbit-code/"  

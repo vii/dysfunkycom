@@ -294,6 +294,8 @@
   (with-slots (oy ox)
       sat
     (d ox oy)))
+(defun sat-vr (sat)
+  (- (sat-r sat) (sat-or sat)))
 
 (defun sat-oangle (sat)
   (with-slots (oy ox)
