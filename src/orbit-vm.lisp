@@ -156,6 +156,57 @@
   (describe-output oport '(Score Fuel Sx Sy Radius))
   oport)
 
+(defstruct poscache
+  sim
+  array)
+
+(defvar *poscache-extend* 3600)
+
+(defun poscache-time (p)
+  (sim-time (poscache-sim p)))
+
+(defun poscache-set (poscache)
+  (let ((array (poscache-array poscache))
+	(sim (poscache-sim poscache)))
+    (loop for sat across (sim-sats sim)
+	  for index = (* 2 (sat-index sat))
+	  do 
+	  (setf (aref (aref array index) (sim-time sim)) (sat-x sat))
+	  (setf (aref (aref array (1+ index)) (sim-time sim)) (sat-y sat)))))
+
+(defun poscache-extend (poscache new-time)
+  (unless (poscache-array poscache)
+    (setf (poscache-array poscache) 
+	  (let ((array (make-array (* 2 (length (sim-sats (poscache-sim poscache)))))))
+	    (loop for i below (length array) do 
+		  (setf (aref array i) (make-array new-time :element-type 'double-float :adjustable t)))
+	    array)))
+
+  (let ((array (poscache-array poscache)))
+    (loop for a across array
+	  do (adjust-array a (1+ new-time))))
+  (poscache-set poscache)
+  (let ((sim (poscache-sim poscache)))
+    (loop while (>= new-time (sim-time sim)) do
+	 (poscache-set poscache)
+	  (sim-step sim))))
+
+(defun poscache-assert-similar (p1 p2)
+  (let ((a1 (poscache-array p1))
+	(a2 (poscache-array p2)))
+    (assert (= (length a1) (length a2)))
+    (loop for i from 2 below (length a1)
+	  do (assert (equalp (aref a1 i) (aref a2 i)) (a1 a2 i)
+		     "differ at ~D (sat ~D)" i (floor i 2)))
+    t))
+
+(defun poscache-pos-at-time (poscache sat time)
+  (when (>= time (poscache-time poscache))
+    (poscache-extend poscache (+ *poscache-extend* time)))
+  (let ((index (* 2 (sat-index sat))) (array (poscache-array poscache)))
+   (values (aref (aref array index) time)
+	   (aref (aref array (1+ index)) time))))
+
 (defstruct (sim (:copier %copy-sim)) 
   program
   memory
@@ -164,6 +215,7 @@
   thrusts
   (time 0)
   sats
+  poscache
   scenario)
 
 (defun copy-sim (sim)
@@ -179,7 +231,8 @@
   oy
 
   done
-  oport-offset)
+  oport-offset
+  index)
 
 (defun sat-vx (sat)
   (with-slots (x ox)
@@ -225,6 +278,9 @@
 	     (add (make-sat :name 0 :oport-offset 4))))
       (let ((copy (copy-sim sim)))
 	(setf (sim-sats copy) (coerce (reverse sats) 'vector))
+	(loop for sat across (sim-sats copy)
+	      for i from 0
+	      do (setf (sat-index sat) i))
 	(sim-step copy)
 	(sim-step copy)
 	(setf (sim-sats sim) (sim-sats copy))))))
@@ -240,6 +296,9 @@
 	  sats (copy-seq sats))
     sim))
 
+(defun sim-us (sim)
+  (elt (sim-sats sim) 0))
+
 (defun make-simulator (filename scenario)
   (multiple-value-bind (compiled initial-data) (load-program filename)
     (let ((memory (copy-seq initial-data))
@@ -253,6 +312,8 @@
 		       :memory memory
 		       :scenario scenario)))
 	(make-sats-for-scenario scenario sim)
+	(setf (sim-poscache sim)
+	      (make-poscache :sim sim))
 	sim))))
 
 (defun sim-score (sim)
