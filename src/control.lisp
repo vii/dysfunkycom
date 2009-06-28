@@ -234,7 +234,7 @@ To see the earth disappear
 
 (defun enemy-semi-major-axis (sim)
   (let ((points (iter (for output = (funcall sim))
-		      (repeat 15)
+		      (repeat 1000)
 		      (for x = (aref output 2)) (for y = (aref output 3))
 		      (for tx = (aref output 4)) (for ty = (aref output 5))
 		      (collect (list (- tx x) (- ty y))))))
@@ -253,12 +253,12 @@ To see the earth disappear
 	      (for x = (aref output 2)) (for y = (aref output 3))
 	      (for angle = (- (normalize-angle (calc-angle-between-vectors (vec x y) (vec e-x e-y))) pi))
 	      (repeat (orbital-period (d x0 y0)))
-	      (finding (sim-time sim) maximizing (abs angle))) 
+	      (finding (sim-time sim) maximizing (abs angle)))
 	(multiple-value-bind (dv1 dv2 secs) (hohmann (d x0 y0) (d e-x e-y))
 	  (declare (ignore dv1 dv2))
 	  secs)))
 
-(defun estimate-target-radius-iteratively (sim &optional (iterations 5) (max-periods 10))
+(defun estimate-target-radius-iteratively (sim &optional (iterations 20) (max-periods 50))
   (prog1 (iter (with (x y) = (destructuring-array-bind (nil nil x y)
 				 (funcall (make-simple-simulator-func (copy-sim sim)))
 			       (list x y)))
@@ -271,10 +271,10 @@ To see the earth disappear
 	       (for (e-x e-y) = (enemy-position-later simulator time)) 
 	       (for (wait-time hohmann-time) = (full-hohmann-time x y e-x e-y (copy-sim sim)))
 	       (for full-wait-time = (iter (for period from 0 to max-periods)
-					   (for tmp upfrom (- time wait-time hohmann-time) by enemy-period)
-					   (finding (+ wait-time (* period enemy-period))
-						    minimizing (mod tmp our-period))))
-	       (finding (list (d e-x e-y) full-wait-time) minimizing (+ full-wait-time hohmann-time)))
+					   (for deviation upfrom (- time wait-time hohmann-time) by enemy-period)
+					   (finding (- (+ time (* period enemy-period)) hohmann-time)
+						    minimizing (mod deviation our-period))))
+	       (finding (list (d e-x e-y) full-wait-time) minimizing full-wait-time))
     (terpri)))
 
 ;;; New idea:
@@ -286,7 +286,6 @@ To see the earth disappear
 
 (defun problem-3-controller (sim)
   (destructuring-bind (target-radius wait) (estimate-target-radius-iteratively sim)
-    (format t "~d ~d~%" target-radius wait)
     (push (list 0 0 target-radius) *show-orbits*)
     (iter (repeat wait) (sim-step sim))
     ;; TODO: get on ellipse orbit instead
