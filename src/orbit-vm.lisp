@@ -204,8 +204,48 @@
   (when (>= time (poscache-time poscache))
     (poscache-extend poscache (+ *poscache-extend* time)))
   (let ((index (* 2 (sat-index sat))) (array (poscache-array poscache)))
-   (values (aref (aref array index) time)
-	   (aref (aref array (1+ index)) time))))
+    (values (aref (aref array index) time)
+	    (aref (aref array (1+ index)) time))))
+
+(defun estimate-satellite-states (x y vx vy dvx dvy steps)
+  ;; NOTE: dvx and dvy will not chang
+  (labels ((run ()
+	     (let* ((r (d x y))
+		    (g-scalar (/ +g-m-earth+ (^2 r)))
+		    (g (vscale (normalize-vector (vec (- x) (- y))) g-scalar))
+		    (v (vec vx vy))
+		    (dv (vec dvx dvy))
+		    (a (v+ g dv))
+		    (next-v (v+ v a))
+		    (next-pos (v+ (vec x y)
+				  (vscale (v+ v next-v) 0.5))))
+	       (setf x (vx next-pos)
+		     y (vy next-pos)
+		     vx (vx next-v)
+		     vy (vy next-v)))))
+    (loop repeat steps
+	  do (run))
+    (values x y vx vy)))
+
+(defun sim-pos-at-time (sim sat time &optional (ax 0d0) (ay 0d0))
+  (cond ((eq :us (sat-name sat))
+	 (assert (>= time (sim-time sim)))
+	 (let ((sat (sim-us sim)))
+	   (estimate-satellite-states (sat-x sat)
+				      (sat-y sat)
+				      (sat-vx sat)
+				      (sat-vy sat)
+				      ax
+				      ay
+				      (- time (sim-time sim)))))
+	(t
+	 (poscache-pos-at-time (sim-poscache sim) sat time))))
+
+(defun sim-target (sim)
+  (elt (sim-sats sim) 1))
+
+(defun sim-fuelstation (sim)
+  (elt (sim-sats sim) 1))
 
 (defstruct (sim (:copier %copy-sim)) 
   program
