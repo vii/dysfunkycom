@@ -396,7 +396,7 @@ To see the earth disappear
 
 
 
-(defun circular-orbit-appraoching-method-controller (sim &key (seconds-between-impulse 10))
+(defun circular-orbit-approaching-method-controller (sim &key (seconds-between-impulse 20))
   (labels ((run ()
 	     (multiple-value-bind (xt0 yt0 vxt0 vyt0)
 		 (position-and-direction-target sim)
@@ -418,12 +418,12 @@ To see the earth disappear
 			    (delta-V (d (- vxt0 vx0) (- vyt0 vy0)))
 			    (k1 1d0)
 			    (k2 1d0)
-			    (a 1d0)
-			    (b 1d0)
-			    (g_v (* k1 (if (> delta-V 0d0) (sqrt delta-V) (- (sqrt delta-V)))))
-			    (t-esti (* 2d0 (/ delta-V g_v)))
+			    (g_v (* k1 (if (> delta-V 0d0)
+					   (sqrt delta-V)
+					   (- (sqrt delta-V)))))
+			    (t-esti (/ delta-V g_v))
 			    (f_dis (* k2 (sqrt (/ distance t-esti))))
-			    (accel-wanted (vscale direction (+ (* a g_v) (* b f_dis)))) 
+			    (accel-wanted (vscale direction (+ g_v f_dis))) 
 			    (g (vscale (normalize-vector (vec (- x0) (- y0)))
 				       (/ +g-m-earth+ (^2 r))))
 			    (accel-to-apply (v- accel-wanted g)))
@@ -442,14 +442,15 @@ To see the earth disappear
 				     :g_v g_v
 				     :t-esti t-esti
 				     :f_dis f_dis
-				     :accel-wanted accel-wanted
 				     :g g
+				     :accel-wanted accel-wanted
 				     :accel-to-apply accel-to-apply
 				     )) 
-		       (sim-step sim (vx accel-to-apply) (vy accel-to-apply))
+		       (sim-step sim (- (vx accel-to-apply)) (- (vy accel-to-apply)))
 		       (loop repeat (1- seconds-between-impulse)
 			     while (zerop (sim-score sim))
 			     do (sim-step sim 0d0 0d0)))))))))
     (loop do (run)
 	  until (not (zerop (sim-score sim))))
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
+
