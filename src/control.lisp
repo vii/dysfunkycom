@@ -232,10 +232,12 @@ To see the earth disappear
       ;; return val
       (values (reverse (sim-thrusts sim)) (sim-time sim)))))
 
-(defun enemy-semi-major-axis (sim &key (step 1000))
-  (let ((points (iter 
-		 (for i below 50)
-		 (collect (multiple-value-list (sim-pos-at-time sim (sim-target sim) (* i step)))))))
+(defun enemy-semi-major-axis (sim)
+  (let ((points (iter (for output = (funcall sim))
+		      (repeat 1000)
+		      (for x = (aref output 2)) (for y = (aref output 3))
+		      (for tx = (aref output 4)) (for ty = (aref output 5))
+		      (collect (list (- tx x) (- ty y))))))
     (destructuring-bind (center a b phi)
 	(ellipse-from-quadratic (estimate-ellipse points))
       (declare (ignore center phi))
@@ -249,11 +251,50 @@ To see the earth disappear
 	      (for x = (aref output 2)) (for y = (aref output 3))
 	      (for angle = (- (normalize-angle (calc-angle-between-vectors (vec x y) (vec e-x e-y))) pi))
 	      (repeat (orbital-period (d x0 y0)))
-	      (finding (sim-time sim) maximizing (abs angle))) 
+	      (finding (sim-time sim) maximizing (abs angle)))
 	(multiple-value-bind (dv1 dv2 secs) (hohmann (d x0 y0) (d e-x e-y))
 	  (declare (ignore dv1 dv2))
 	  secs)))
 
+
+(defun estimate-target-radius-iteratively (sim &optional (iterations 20) (max-periods 50))
+  (prog1 (iter (with (x y) = (destructuring-array-bind (nil nil x y)
+				 (funcall (make-simple-simulator-func (copy-sim sim)))
+			       (list x y)))
+	       (with enemy-period = (orbital-period (enemy-semi-major-axis (copy-sim sim))))
+	       (with our-period = (orbital-period (d x y)))
+	       (for i from iterations above 0)
+	       (format t "~d..." i)
+	       (for time upfrom 1 by (/ enemy-period (1+ iterations)))
+	       (for simulator = (make-simple-simulator-func (copy-sim sim)))
+	       (for (e-x e-y) = (enemy-position-later simulator time)) 
+	       (for (wait-time hohmann-time) = (full-hohmann-time x y e-x e-y (copy-sim sim)))
+	       (for full-wait-time = (iter (for period from 0 to max-periods)
+					   (for deviation upfrom (- time wait-time hohmann-time) by enemy-period)
+					   (finding (- (+ time (* period enemy-period)) hohmann-time)
+						    minimizing (mod deviation our-period))))
+	       (finding (list (d e-x e-y) full-wait-time) minimizing full-wait-time))
+    (terpri)))
+
+;;; New idea:
+;;; - calculate the time steps ti when the enemy will be at P = enemy(t0) [t0, t0+enemy_period, ...]
+;;; - calculate the time steps Ti when I will be at the position from where I can jump to P
+;;; - select the one where |ti - Ti| is minimal, trying with different t0s
+;;; - go there (initial thrust by Hohmann)
+;;; - stay on orbit (thrust such that our velocity matches the enemy's)
+
+(defun problem-3-controller (sim)
+  (destructuring-bind (target-radius wait) (estimate-target-radius-iteratively sim)
+    (push (list 0 0 target-radius) *show-orbits*)
+    (iter (repeat wait) (sim-step sim))
+    ;; TODO: get on ellipse orbit instead
+    (problem-1-controller sim target-radius)
+    
+    (cl-user::debug-state (sat-angle (sim-us sim))
+			  (sat-angle (sim-target sim))
+			  )
+
+    (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
 ;;; previous implementation
 ;;; not used now
