@@ -208,7 +208,7 @@
 	    (aref (aref array (1+ index)) time))))
 
 (defun estimate-satellite-states (x y vx vy dvx dvy steps)
-  ;; NOTE: dvx and dvy will not chang
+  ;; NOTE: dvx and dvy will not change
   (labels ((run ()
 	     (let* ((r (d x y))
 		    (g-scalar (/ +g-m-earth+ (^2 r)))
@@ -218,7 +218,7 @@
 		    (a (v+ g dv))
 		    (next-v (v+ v a))
 		    (next-pos (v+ (vec x y)
-				  (vscale (v+ v next-v) 0.5))))
+				  (vscale (v+ v next-v) 0.5d0))))
 	       (setf x (vx next-pos)
 		     y (vy next-pos)
 		     vx (vx next-v)
@@ -355,7 +355,7 @@
 		       :scenario scenario)))
 	(make-sats-for-scenario scenario sim)
 	(setf (sim-poscache sim)
-	      (make-poscache :sim sim))
+	      (make-poscache :sim (copy-sim sim)))
 	sim))))
 
 (defun sim-score (sim)
