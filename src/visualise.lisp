@@ -2,128 +2,8 @@
 
 (defparameter *show-orbits* nil "A list of orbits to be displayed.")
 
-(defstruct visat
-  (sx 0d0 :type double-float)
-  (sy 0d0 :type double-float)
-  name
-  (color sdl:*red*) 
-  vx
-  vy)
-
-(defun make-example-func ()
-  (let ((satspos 
-	 (loop repeat 100 
-	       for i from 0
-	       collect
-	       (list (make-visat :name 'plus
-				 :sx (* i +radius-earth+)
-				 :sy (* i 100)
-				 :vx 1
-				 :vy 1
-				 )
-		     
-		     (make-visat :name 'half-minus
-				 :sx (* i +radius-earth+)
-				 :sy (- (* 100 i))
-				 :vx 1
-				 :vy (- 1)
-				 )))))
-       (lambda ()
-	 (pop satspos))))
-
-(defun make-visualise-oport-1 (func &optional frames)
-  (let ((time 0) (frame (pop frames)))
-   (lambda ()
-     (let ((ax 0d0) (ay 0d0))
-       (when (and frame (= time (first frame)))
-	 (loop for (control val) in (rest frame)
-	       do (cond 
-		    ((= control 2) (setf ax val))
-		    ((= control 3) (setf ay val))
-		    (t (assert (= #x3e80 control))
-		       (assert (zerop time)))))
-	 (setf frame (pop frames)))
-       (let ((oport (funcall func ax ay)))
-	 (incf time)
-	 (when oport
-	   (destructuring-array-bind 
-	     (score fuel x y tx ty)
-	     oport
-	     (declare (ignore fuel))
-	     (check-type x double-float)
-	     (when (= time 1)
-	       (setf *show-orbits* (list (list 0 0 (norm (vec x y))) (list 0 0 (norm (vec tx ty))))))
-	     (cond ((zerop score)
-		    (list (make-visat :name "dysfunc" :sx x :sy y)))
-		   (t 
-		    (format *debug-io* "Finishing because score is ~A~%" score)
-		    nil)))))))))
-
-(defun make-visualise-oport-2 (func &optional frames)
-  (let ((time 0) (frame (pop frames)))
-   (lambda ()
-     (let ((ax 0d0) (ay 0d0))
-       (when (and frame (= time (first frame)))
-	 (loop for (control val) in (rest frame)
-	       do (cond 
-		    ((= control 2) (setf ax val))
-		    ((= control 3) (setf ay val))
-		    (t (assert (= #x3e80 control))
-		       (assert (zerop time)))))
-	 (setf frame (pop frames)))
-       (let ((oport (funcall func ax ay)))
-	 (incf time)
-	 (when oport
-	   (destructuring-array-bind 
-	    (score fuel x y tx ty)
-	    oport
-	    (declare (ignore fuel))
-	    (check-type x double-float)
-	    (cond ((zerop score)
-		   (list (make-visat :name "dysfunc" :sx x :sy y)
-			 (make-visat :name "target" :sx (- x tx) :sy (- y ty) :color sdl:*green*)))
-		  (t 
-		    (format *debug-io* "Finishing because score is ~A~%" score)
-		    nil)))))))))
-
-
-(defun make-visualise-oport-4 (func &optional frames)
-  (let ((time 0) (frame (pop frames)))
-   (lambda ()
-     (let ((ax 0d0) (ay 0d0))
-       (when (and frame (= time (first frame)))
-	 (loop for (control val) in (rest frame)
-	       do (cond 
-		    ((= control 2) (setf ax val))
-		    ((= control 3) (setf ay val))
-		    (t (assert (= #x3e80 control))
-		       (assert (zerop time)))))
-	 (setf frame (pop frames)))
-       (let ((oport (funcall func ax ay)))
-	 (incf time)
-	 (when oport
-	   (destructuring-array-bind 
-	    (score fuel x y fx fy)
-	    oport
-	    (declare (ignore fuel))
-	    (check-type x double-float)
-	     
-	    (cond ((zerop score)
-		   (let ((sats (list 
-				(make-visat :name "dysfunc" :sx x :sy y) 
-				(make-visat :name "fuel" :sx (- x fx) :sy (- y fy) :color sdl:*blue*)
-				(make-visat :name "moon" :sx ( - x (elt oport #x64)) :sy ( - y (elt oport #x65)) :color sdl:*yellow*)
-				))) 
-			 (loop for k below 12
-			       do (push (make-visat :name (format nil "~A" k) :sx (- x (elt oport (+ 7 (* 3 K))))
-						    :sy (- y (elt oport (+ 8 (* 3 K))))  :color sdl:*green*) sats))
-			 sats
-			 ))
-		  (t 
-		    (format *debug-io* "Finishing because score is ~A~%" score)
-		    nil)))))))))
-
-(defun visualise-draw-text (text &key (x 10) (y 10) (font sdl:*default-font*) (surface sdl:*default-surface*) (fg-color sdl:*white*) (bg-color sdl:*black*))
+(defun visualise-draw-text 
+    (text &key (x 10) (y 10) (font sdl:*default-font*) (surface sdl:*default-surface*) (fg-color sdl:*white*) (bg-color sdl:*black*))
   (sdl:render-string-shaded text 
 			    fg-color bg-color :font font :cache t :free t)
   ;; Draw the string each frame
@@ -132,17 +12,24 @@
 (defvar *visualise-window-height* 0)
 (defvar *visualise-window-width* 0)
 
-(defun visualise (func &key (earth-color (sdl:color :r 20 :g 100 :b 100)) 
-		  (earth-radius +radius-earth+) (visat-radius 2)
+(defun sat-color (sat)
+  (case (sat-name sat)
+    (:us sdl:*red*)
+    (:fuel sdl:*blue*)
+    (t sdl:*green*)))
+
+(defun visualise (sim &key (earth-color (sdl:color :r 20 :g 100 :b 100))
+		  frames
+		  (earth-radius +radius-earth+) (sat-radius 2)
 		  (window-width *visualise-window-width*) (window-height *visualise-window-height*) (playing-steps 100)
 		  (playing-time-scale 0.0001d0))
   (declare (optimize debug safety))
-  (let* (satspos (time 0) (scale (* 2 +radius-earth+)) playing window)
+  (let* ((time 0) (scale (* 2 +radius-earth+)) playing window (frame (pop frames)))
     (labels (
 	     (rescale ()
 	       (labels ((max-one (func)
-			  (max (* 2 +radius-earth+) (loop for visat in satspos
-							  maximizing (abs (funcall func visat))))))
+			  (max (* 2 +radius-earth+) (loop for sat across (sim-sats sim)
+							  maximizing (abs (funcall func sat))))))
 		 (macrolet ((maybe-scale (var func)
 			      (with-gensyms (real-scale)
 				`(let ((,real-scale (coerce (max-one ,func) 'double-float)))
@@ -150,10 +37,10 @@
 					   (< ,var (* 1.2 ,real-scale)))
 				       (+ 1 (* 1.3 ,real-scale))
 				       ,var)))))
-		   (setf scale (max (maybe-scale scale #'visat-sx) (maybe-scale scale #'visat-sy))))))
+		   (setf scale (max (maybe-scale scale #'sat-x) (maybe-scale scale #'sat-y))))))
 	     (window-scale ()
 	       (/ (* 2 scale)
-		  (max window-height window-width)))
+		  (min window-height window-width)))
 	     (xform-x (x)
 	       (round (let ((width window-width))
 			(+ (/ width 2) (/ x (window-scale))))))
@@ -166,17 +53,26 @@
 	       (loop repeat (if playing (+ playing-steps (* time playing-time-scale)) 1) do
 		     (one-step)))
 	     (one-step ()
-	       (setf satspos (funcall func))
-	       (unless satspos
-		 (return-from visualise time))
+	       (let ((ax 0d0) (ay 0d0))
+		 (when (and frame (= time (first frame)))
+		   (loop for (control val) in (rest frame)
+			 do (cond 
+			      ((= control 2) (setf ax val))
+		    ((= control 3) (setf ay val))
+		    (t (assert (= #x3e80 control))
+		       (assert (zerop time)))))
+		   (setf frame (pop frames)))
+		 (sim-step sim ax ay))
+	       (unless (zerop (sim-score sim))
+		 (return-from visualise (values (sim-score sim) sim)))
 	       (incf time))
 	     (skip-frames (n)
 	       (loop repeat n do (one-step)))
 	     (crashing-into-earth ()
-	       (iter (for visat in satspos)
+	       (iter (for sat in-sequence (sim-sats sim))
 		     (thereis (>= (* 1.01d0 (^2 +radius-earth+))
-			       (+ (^2 (visat-sx visat))
-				  (^2 (visat-sy visat)))))))
+			       (+ (^2 (sat-x sat))
+				  (^2 (sat-y sat)))))))
 	     (draw ()
 	       (sdl:clear-display (if (crashing-into-earth) sdl:*red* sdl:*black*))
 	       (rescale)
@@ -186,14 +82,14 @@
 	       (sdl:draw-filled-circle-* (xform-x 0) (xform-y 0)
 					 (xform-radius earth-radius)
 					 :color earth-color)
-	       (loop for visat in satspos do
-		     (sdl:draw-filled-circle-* (xform-x (visat-sx visat)) (xform-y (visat-sy visat))
-					       visat-radius
-					       :color (visat-color visat))
-		     #- (and) (visualise-draw-text (format nil "~A ~,3E" (visat-name visat) (d (visat-sx visat) (visat-sy visat)))
-					  :x (xform-x (visat-sx visat)) :y (xform-y (visat-sy visat))
-					  :fg-color (sdl:any-color-but-this (visat-color visat))
-					  :bg-color (visat-color visat))
+	       (loop for sat across (sim-sats sim) do
+		     (sdl:draw-filled-circle-* (xform-x (sat-x sat)) (xform-y (sat-y sat))
+					       sat-radius
+					       :color (sat-color sat))
+		     #- (and) (visualise-draw-text (format nil "~A ~,3E" (sat-name sat) (sat-r sat))
+					  :x (xform-x (sat-x sat)) :y (xform-y (sat-y sat))
+					  :fg-color (sdl:any-color-but-this (sat-color sat))
+					  :bg-color (sat-color sat))
 		     )
 	       (visualise-draw-text (format nil "T = ~As (~$ days) scale = ~,3E log10scale = ~D" time (/ time (* 24 60 60)) scale (round (log scale 10))))
 	       (sdl:update-display))
@@ -248,13 +144,6 @@
 	((> 3000 scenario)
 	 'problem-2-controller)))
 
-(defun visualiser-for-scenario (scenario)
-  (cond ((> 2000 scenario) 
-	 'make-visualise-oport-1)
-	((> 3000 scenario)
-	 'make-visualise-oport-2)
-	(t 'make-visualise-oport-4)))
-
 (defvar *orbit-code-dir* 
   (with-standard-io-syntax (format nil "~A/../orbit-code/"  
 				   #.(directory-namestring *compile-file-truename*))))
@@ -266,18 +155,13 @@
    *orbit-code-dir*))
 
 (defun visualise-scenario (scenario &key frames (controller (controller-for-scenario scenario)) 
-			   (visualiser-func (visualiser-for-scenario scenario)) (file (file-for-scenario scenario)))
+			   (file (file-for-scenario scenario)))
   (let* ((scenario (coerce scenario 'double-float))
 	 (sim (make-simulator file scenario))
 	 (*show-orbits* nil))
-    (visualise
-     (funcall visualiser-func (make-simple-simulator-func sim) (or frames (when controller (funcall controller (copy-sim sim))))))))
+    (visualise sim :frames 
+	       (or frames (when controller (funcall controller (copy-sim sim)))))))
 
 (defun visualise-submission (filename)
-  (multiple-value-bind (frames scenario team) (read-submission filename)
-    (declare (ignore team))
-    (let* ((visualiser-func (visualiser-for-scenario scenario))
-	   (file (file-for-scenario scenario))
-	   (sim (make-simulator file scenario))
-	   (*show-orbits* nil))
-      (visualise (funcall visualiser-func (make-simple-simulator-func sim) frames)))))
+  (multiple-value-bind (frames scenario) (read-submission filename)
+    (visualise-scenario scenario :frames frames)))

@@ -156,23 +156,88 @@
   (describe-output oport '(Score Fuel Sx Sy Radius))
   oport)
 
-(defstruct (sim (:copier nil)) 
+(defstruct (sim (:copier %copy-sim)) 
   program
   memory
   input-port
   output-port
   thrusts
   (time 0)
-  )
+  sats
+  scenario)
 
 (defun copy-sim (sim)
-  (make-sim 
-   :program (sim-program sim)
-   :memory (copy-seq (sim-memory sim))
-   :input-port (copy-seq (sim-input-port sim))
-   :output-port (copy-seq (sim-output-port sim))
-   :thrusts (copy-seq (sim-thrusts sim))
-   :time (sim-time sim)))
+  (let ((new (%copy-sim sim)))
+    (sim-freshen new)
+    new))
+
+(defstruct sat
+  name
+  x
+  y
+  ox
+  oy
+
+  done
+  oport-offset)
+
+(defun sat-vx (sat)
+  (with-slots (x ox)
+      sat
+      (- x ox)))
+(defun sat-vy (sat)
+  (with-slots (y oy)
+      sat
+      (- y oy)))
+(defun sat-angle (sat)
+  (with-slots (y x)
+      sat
+      (angle x y)))
+(defun sat-r (sat)
+  (with-slots (y x)
+      sat
+      (d x y)))
+(defun sat-or (sat)
+  (with-slots (oy ox)
+      sat
+    (d ox oy)))
+
+(defun sat-oangle (sat)
+  (with-slots (oy ox)
+      sat
+    (angle ox oy)))
+
+(defun sat-vangle (sat)
+  (normalize-vangle (- (sat-angle sat) (sat-oangle sat))))
+
+(defun make-sats-for-scenario (scenario sim)
+  (let (sats)
+    (labels ((add (sat)
+	       (push sat sats)))
+      (add (make-sat :name :us))
+      
+      (cond ((> scenario 4000)
+	     (add (make-sat :name :fuel :oport-offset 4 :done t))
+	     (loop for k below 12
+		   do (add (make-sat :name k :oport-offset (+ 7 (* 3 k))))))
+	    ((> scenario 2000)
+	     (add (make-sat :name 0 :oport-offset 4))))
+      (let ((copy (copy-sim sim)))
+	(setf (sim-sats copy) (coerce (reverse sats) 'vector))
+	(sim-step copy)
+	(sim-step copy)
+	(setf (sim-sats sim) (sim-sats copy))))))
+
+(defun sim-freshen (sim)
+  (with-slots 
+	(memory input-port output-port thrusts sats)
+      sim
+    (setf memory (copy-seq memory)
+	  input-port (copy-seq input-port)
+	  output-port (copy-seq output-port)
+	  thrusts (copy-seq thrusts)
+	  sats (copy-seq sats))
+    sim))
 
 (defun make-simulator (filename scenario)
   (multiple-value-bind (compiled initial-data) (load-program filename)
@@ -180,10 +245,39 @@
 	  (input-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0))
 	  (output-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0)))
       (setf (elt input-port #x3e80) scenario)
-      (make-sim :program compiled
-		:input-port input-port
-		:output-port output-port
-		:memory memory))))
+      (let ((sim
+	     (make-sim :program compiled
+		       :input-port input-port
+		       :output-port output-port
+		       :memory memory
+		       :scenario scenario)))
+	(make-sats-for-scenario scenario sim)
+	sim))))
+
+(defun sim-score (sim)
+  (with-slots 
+	(output-port)
+      sim
+    (elt output-port 0)))
+
+(defun sim-fuel (sim)
+  (with-slots 
+	(output-port)
+      sim
+    (elt output-port 1)))
+
+(defun sim-update-sats (sim)
+  (let ((oport (sim-output-port sim)))
+    (destructuring-array-bind 
+     (nil nil x y)
+     oport
+     (loop for sat across (sim-sats sim) do
+	   (setf (sat-ox sat) (sat-x sat)
+		 (sat-oy sat) (sat-y sat))
+	   (if (sat-oport-offset sat)
+	       (setf (sat-x sat) (- x (elt oport (sat-oport-offset sat)))
+		     (sat-y sat) (- y (elt oport (1+ (sat-oport-offset sat)))))
+	       (setf (sat-x sat) x (sat-y sat) y))))))
 
 (defun sim-step (sim &optional (ax 0d0) (ay 0d0))
   (with-slots (program memory input-port output-port thrusts time)
@@ -194,6 +288,7 @@
 	(push `(,time ,@(unless (zerop ax) `((2 ,ax))) ,@(unless (zerop ay) `((3 ,ay)))) thrusts))
     (funcall program memory input-port output-port)
     (incf time)
+    (sim-update-sats sim)
     output-port))
 
 (defun make-simple-simulator-func (sim)
