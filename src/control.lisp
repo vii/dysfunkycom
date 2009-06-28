@@ -99,6 +99,33 @@ Outputs: a list of double-floats
 	  (boost (- (d vx vy) (sqrt (/ +g-m-earth+ r))))) 
 	(values (reverse (sim-thrusts sim)) (sim-time sim))))))
 
+(defun problem-3-controller-jump (sim r)
+  (multiple-value-bind (x y)
+      (position-and-direction sim)
+    (labels ((boost (speed)
+	       (let ((vec (vscale (multiple-value-bind (x y vx vy)
+				      (position-and-direction sim)
+				    (adjust-direction
+				     (calc-unit-tangent-vector (vec x y))
+				     (vec vx vy))) speed)))
+		 (sim-step sim (vx vec) (vy vec))))
+	     #+ignore
+	     (done? ()
+	       (destructuring-array-bind (score nil x1 y1) 
+		   (sim-step sim)
+		 (assert (zerop score))
+		 (let ((vx (- x1 x)) (vy (- y1 y)))
+		   (prog1 (/= (signum (- (d x1 y1) r))
+			      (signum (- (d (+ x1 (* 1 vx)) (+ y1 (* 1 vy))) r)))
+		     (setf x x1 y y1))))))
+      (multiple-value-bind (init-dv end-dv estimated-time)
+	  (hohmann (d x y) r)
+	(declare (ignorable end-dv))
+	(boost (- init-dv))
+	(loop repeat (- (round estimated-time) 2)
+	      for output = (sim-step sim))
+	(values (reverse (sim-thrusts sim)) (sim-time sim))))))
+
 (defun problem-1-controller-burn (sim &key (r (problem-1-target-radius sim)) (fuel 9000))
   "This does not work
 
@@ -244,7 +271,7 @@ To see the earth disappear
       (max a b))))
 
 (defun enemy-position-later (sim n)
-  (multiple-value-list (sim-pos-at-time sim (sim-target sim) (round n))))
+  (mapcar '- (multiple-value-list (sim-pos-at-time sim (sim-target sim) (floor n)))))
 
 (defun full-hohmann-time (x0 y0 e-x e-y sim)
   (list (iter (for output = (sim-step sim))
@@ -256,18 +283,17 @@ To see the earth disappear
 	  (declare (ignore dv1 dv2))
 	  secs)))
 
-
 (defun estimate-target-radius-iteratively (sim &optional (iterations 20) (max-periods 50))
   (prog1 (iter (with (x y) = (destructuring-array-bind (nil nil x y)
 				 (funcall (make-simple-simulator-func (copy-sim sim)))
 			       (list x y)))
-	       (with enemy-period = (orbital-period (enemy-semi-major-axis (copy-sim sim))))
+	       (with enemy-period = 
+		     (nth-value 2 (estimate-apogee-and-period sim (sim-target sim))))
 	       (with our-period = (orbital-period (d x y)))
 	       (for i from iterations above 0)
 	       (format t "~d..." i)
 	       (for time upfrom 1 by (/ enemy-period (1+ iterations)))
-	       (for simulator = (make-simple-simulator-func (copy-sim sim)))
-	       (for (e-x e-y) = (enemy-position-later simulator time)) 
+	       (for (e-x e-y) = (enemy-position-later sim time)) 
 	       (for (wait-time hohmann-time) = (full-hohmann-time x y e-x e-y (copy-sim sim)))
 	       (for full-wait-time = (iter (for period from 0 to max-periods)
 					   (for deviation upfrom (- time wait-time hohmann-time) by enemy-period)
@@ -288,11 +314,12 @@ To see the earth disappear
     (push (list 0 0 target-radius) *show-orbits*)
     (iter (repeat wait) (sim-step sim))
     ;; TODO: get on ellipse orbit instead
-    (problem-1-controller sim target-radius)
-    
-    (cl-user::debug-state (sat-angle (sim-us sim))
-			  (sat-angle (sim-target sim))
-			  )
+    (problem-3-controller-jump sim target-radius)
+
+    (let ((us (sim-us sim)) (e (sim-target sim)))
+      (let ((vx (sat-vx us)) (vy (sat-vy us))
+	    (evx (sat-vx e)) (evy (sat-vy e)))
+	(sim-step sim (- vx evx) (- vy evy))))
 
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
@@ -393,7 +420,7 @@ To see the earth disappear
 
 
 
-(defun circular-orbit-approaching-method-controller (sim &key (seconds-between-impulse 20))
+(defun circular-orbit-appraoching-method-controller (sim &key (seconds-between-impulse 10))
   (labels ((run ()
 	     (multiple-value-bind (xt0 yt0 vxt0 vyt0)
 		 (position-and-direction-target sim)
@@ -415,12 +442,12 @@ To see the earth disappear
 			    (delta-V (d (- vxt0 vx0) (- vyt0 vy0)))
 			    (k1 1d0)
 			    (k2 1d0)
-			    (g_v (* k1 (if (> delta-V 0d0)
-					   (sqrt delta-V)
-					   (- (sqrt delta-V)))))
-			    (t-esti (/ delta-V g_v))
+			    (a 1d0)
+			    (b 1d0)
+			    (g_v (* k1 (if (> delta-V 0d0) (sqrt delta-V) (- (sqrt delta-V)))))
+			    (t-esti (* 2d0 (/ delta-V g_v)))
 			    (f_dis (* k2 (sqrt (/ distance t-esti))))
-			    (accel-wanted (vscale direction (+ g_v f_dis))) 
+			    (accel-wanted (vscale direction (+ (* a g_v) (* b f_dis)))) 
 			    (g (vscale (normalize-vector (vec (- x0) (- y0)))
 				       (/ +g-m-earth+ (^2 r))))
 			    (accel-to-apply (v- accel-wanted g)))
@@ -439,15 +466,14 @@ To see the earth disappear
 				     :g_v g_v
 				     :t-esti t-esti
 				     :f_dis f_dis
-				     :g g
 				     :accel-wanted accel-wanted
+				     :g g
 				     :accel-to-apply accel-to-apply
 				     )) 
-		       (sim-step sim (- (vx accel-to-apply)) (- (vy accel-to-apply)))
+		       (sim-step sim (vx accel-to-apply) (vy accel-to-apply))
 		       (loop repeat (1- seconds-between-impulse)
 			     while (zerop (sim-score sim))
 			     do (sim-step sim 0d0 0d0)))))))))
     (loop do (run)
 	  until (not (zerop (sim-score sim))))
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
-

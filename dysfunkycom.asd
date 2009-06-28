@@ -24,7 +24,8 @@
 				     (:file "macros" :depends-on ("package"))
 				     (:file "physics" :depends-on ("constants"))
 				     (:file "submission" :depends-on ("constants" "orbit-vm"))
-				     (:file "control" :depends-on ("physics" "macros"))
+				     (:file "apogee" :depends-on ("orbit-vm"))
+				     (:file "control" :depends-on ("physics" "macros" "apogee"))
 				     (:file "control-superburn" :depends-on ("control"))
 				     )))
 
