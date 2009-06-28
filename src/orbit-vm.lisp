@@ -293,7 +293,7 @@
 	  input-port (copy-seq input-port)
 	  output-port (copy-seq output-port)
 	  thrusts (copy-seq thrusts)
-	  sats (copy-seq sats))
+	  sats (map 'vector 'copy-sat sats))
     sim))
 
 (defun sim-us (sim)
