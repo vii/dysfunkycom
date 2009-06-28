@@ -355,7 +355,7 @@
 		       :scenario scenario)))
 	(make-sats-for-scenario scenario sim)
 	(setf (sim-poscache sim)
-	      (make-poscache :sim sim))
+	      (make-poscache :sim (copy-sim sim)))
 	sim))))
 
 (defun sim-score (sim)
