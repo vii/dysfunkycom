@@ -25,6 +25,32 @@
 		    (collect (remove-if-not #'identity frame) into acc)))
 		(finally (return (append acc (list (list i))))))))
 
+(defun thrusts-to-thrusts-and-clears (thrusts)
+  (let (saved 
+	(thrusts (sort (loop for (time . pairs) in thrusts
+			     collect `(,time ,@pairs)
+			     collect `(,(1+ time) ,@(loop for (reg val) in pairs
+							  when (and (> 4 reg) (not (zerop val)))
+							  collect `(,reg 0d0))))
+		       #'< :key #'car)))
+    (iter (for (time . pairs) in thrusts)
+	  (for tmp on thrusts)
+	  (for next-time = (caadr tmp))
+	  (cond ((equalp time next-time)
+		 (appendf saved pairs))
+		(t 
+		 (let (out)
+		   (loop for (reg value) in
+			 (append saved pairs)
+			 do 
+			 (setf (getf out reg) value))
+		   (when out
+		     (collect `(,time 
+				,@(sort 
+				   (loop for (reg val) on out by #'cddr collect `(,reg ,val))
+				   #'< :key #'car))))
+		   (setf saved nil)))))))
+
 (defun submission (scenario frames)
   "FRAMES is a list of frames where the input ports have changed.
 The format is:
@@ -76,10 +102,7 @@ Example:
 \(write-submission 1001d0 '\(\(1.0d0 0.5d0) \(1.0d0 0.5d0) \(0.0d0 0.5d0) \(0.0d0 0.5d0)) \"submission-test\")"
   (with-open-file (s filename :direction :output :if-exists :supersede
 		     :element-type '(unsigned-byte 8))
-    (let ((full-frames (if (= (first (first frames)) 0)
-				     (cons (cons 0 (append `((16000 ,scenario)) (rest (first frames)))) (rest frames))
-				     (append `((0 (16000 ,scenario))) frames))))
-      (write-sequence (submission scenario full-frames) s))))
+    (write-sequence (submission scenario (thrusts-to-thrusts-and-clears (append `((0 (16000 ,scenario))) frames))) s)))
 
 (defun read-submission (filename)
   "Three return values: \(frames scenario team-id)."
