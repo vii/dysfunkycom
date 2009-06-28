@@ -20,7 +20,7 @@
 				     #-darwin (:file "visualise" :depends-on ("physics" "macros" "submission"))
 				     (:file "orbit-vm" :depends-on ("package"))
 				     (:file "constants" :depends-on ("package"))
-				     (:file "math" :depends-on ("package"))
+				     (:file "math" :depends-on ("package" "lu"))
 				     (:file "macros" :depends-on ("package"))
 				     (:file "physics" :depends-on ("constants"))
 				     (:file "submission" :depends-on ("constants" "orbit-vm"))
