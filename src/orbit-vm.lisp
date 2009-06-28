@@ -156,6 +156,97 @@
   (describe-output oport '(Score Fuel Sx Sy Radius))
   oport)
 
+(defstruct poscache
+  sim
+  array)
+
+(defvar *poscache-extend* 3600)
+
+(defun poscache-time (p)
+  (sim-time (poscache-sim p)))
+
+(defun poscache-set (poscache)
+  (let ((array (poscache-array poscache))
+	(sim (poscache-sim poscache)))
+    (loop for sat across (sim-sats sim)
+	  for index = (* 2 (sat-index sat))
+	  do 
+	  (setf (aref (aref array index) (sim-time sim)) (sat-x sat))
+	  (setf (aref (aref array (1+ index)) (sim-time sim)) (sat-y sat)))))
+
+(defun poscache-extend (poscache new-time)
+  (unless (poscache-array poscache)
+    (setf (poscache-array poscache) 
+	  (let ((array (make-array (* 2 (length (sim-sats (poscache-sim poscache)))))))
+	    (loop for i below (length array) do 
+		  (setf (aref array i) (make-array new-time :element-type 'double-float :adjustable t)))
+	    array)))
+
+  (let ((array (poscache-array poscache)))
+    (loop for a across array
+	  do (adjust-array a (1+ new-time))))
+  (poscache-set poscache)
+  (let ((sim (poscache-sim poscache)))
+    (loop while (>= new-time (sim-time sim)) do
+	 (poscache-set poscache)
+	  (sim-step sim))))
+
+(defun poscache-assert-similar (p1 p2)
+  (let ((a1 (poscache-array p1))
+	(a2 (poscache-array p2)))
+    (assert (= (length a1) (length a2)))
+    (loop for i from 2 below (length a1)
+	  do (assert (equalp (aref a1 i) (aref a2 i)) (a1 a2 i)
+		     "differ at ~D (sat ~D)" i (floor i 2)))
+    t))
+
+(defun poscache-pos-at-time (poscache sat time)
+  (when (>= time (poscache-time poscache))
+    (poscache-extend poscache (+ *poscache-extend* time)))
+  (let ((index (* 2 (sat-index sat))) (array (poscache-array poscache)))
+    (values (aref (aref array index) time)
+	    (aref (aref array (1+ index)) time))))
+
+(defun estimate-satellite-states (x y vx vy dvx dvy steps)
+  ;; NOTE: dvx and dvy will not chang
+  (labels ((run ()
+	     (let* ((r (d x y))
+		    (g-scalar (/ +g-m-earth+ (^2 r)))
+		    (g (vscale (normalize-vector (vec (- x) (- y))) g-scalar))
+		    (v (vec vx vy))
+		    (dv (vec dvx dvy))
+		    (a (v+ g dv))
+		    (next-v (v+ v a))
+		    (next-pos (v+ (vec x y)
+				  (vscale (v+ v next-v) 0.5))))
+	       (setf x (vx next-pos)
+		     y (vy next-pos)
+		     vx (vx next-v)
+		     vy (vy next-v)))))
+    (loop repeat steps
+	  do (run))
+    (values x y vx vy)))
+
+(defun sim-pos-at-time (sim sat time &optional (ax 0d0) (ay 0d0))
+  (cond ((eq :us (sat-name sat))
+	 (assert (>= time (sim-time sim)))
+	 (let ((sat (sim-us sim)))
+	   (estimate-satellite-states (sat-x sat)
+				      (sat-y sat)
+				      (sat-vx sat)
+				      (sat-vy sat)
+				      ax
+				      ay
+				      (- time (sim-time sim)))))
+	(t
+	 (poscache-pos-at-time (sim-poscache sim) sat time))))
+
+(defun sim-target (sim)
+  (elt (sim-sats sim) 1))
+
+(defun sim-fuelstation (sim)
+  (elt (sim-sats sim) 1))
+
 (defstruct (sim (:copier %copy-sim)) 
   program
   memory
@@ -164,6 +255,7 @@
   thrusts
   (time 0)
   sats
+  poscache
   scenario)
 
 (defun copy-sim (sim)
@@ -179,7 +271,8 @@
   oy
 
   done
-  oport-offset)
+  oport-offset
+  index)
 
 (defun sat-vx (sat)
   (with-slots (x ox)
@@ -225,6 +318,9 @@
 	     (add (make-sat :name 0 :oport-offset 4))))
       (let ((copy (copy-sim sim)))
 	(setf (sim-sats copy) (coerce (reverse sats) 'vector))
+	(loop for sat across (sim-sats copy)
+	      for i from 0
+	      do (setf (sat-index sat) i))
 	(sim-step copy)
 	(sim-step copy)
 	(setf (sim-sats sim) (sim-sats copy))))))
@@ -237,8 +333,11 @@
 	  input-port (copy-seq input-port)
 	  output-port (copy-seq output-port)
 	  thrusts (copy-seq thrusts)
-	  sats (copy-seq sats))
+	  sats (map 'vector 'copy-sat sats))
     sim))
+
+(defun sim-us (sim)
+  (elt (sim-sats sim) 0))
 
 (defun make-simulator (filename scenario)
   (multiple-value-bind (compiled initial-data) (load-program filename)
@@ -253,6 +352,8 @@
 		       :memory memory
 		       :scenario scenario)))
 	(make-sats-for-scenario scenario sim)
+	(setf (sim-poscache sim)
+	      (make-poscache :sim sim))
 	sim))))
 
 (defun sim-score (sim)

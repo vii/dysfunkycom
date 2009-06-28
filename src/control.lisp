@@ -328,27 +328,6 @@ To see the earth disappear
 	(nreverse thrusts)))))
 
 
-;;; approaching method
-;;; inputs: delta_theta, delta_omega, delta_r, look_ahead_values (sim values)
-(defun estimate-satellite-states (x y vx vy dvx dvy step)
-  ;; NOTE: dvx and dvy will not chang
-  (labels ((run ()
-	     (let* ((r (d x y))
-		    (g-scalar (/ +g-m-earth+ (^2 r)))
-		    (g (vscale (normalize-vector (vec (- x) (- y))) g-scalar))
-		    (v (vec vx vy))
-		    (dv (vec dvx dvy))
-		    (a (v+ g dv))
-		    (next-v (v+ v a))
-		    (next-pos (v+ (vec x y)
-				  (vscale (v+ v next-v) 0.5))))
-	       (setf x (vx next-pos)
-		     y (vy next-pos)
-		     vx (vx next-v)
-		     vy (vy next-v)))))
-    (loop repeat step
-	  do (run))
-    (values x y vx vy)))
 
 (defun circular-orbit-appraoching-method-controller (sim &key (seconds-between-impulse 10))
   (labels ((run ()
