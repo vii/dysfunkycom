@@ -151,15 +151,17 @@
 				       (+ 1 (* 1.3 ,real-scale))
 				       ,var)))))
 		   (setf scale (max (maybe-scale scale #'visat-sx) (maybe-scale scale #'visat-sy))))))
+	     (window-scale ()
+	       (/ (* 2 scale)
+		  (max window-height window-width)))
 	     (xform-x (x)
-	       (round (let ((width (sdl:width window)))
-			(/ (+ width (* (/ x scale) width)) 2d0))))
+	       (round (let ((width window-width))
+			(+ (/ width 2) (/ x (window-scale))))))
 	     (xform-y (y)
-	       (round (let ((height (sdl:height window)))
-			(/ (+ height (* (/ y scale) height)) 2d0))))
+	       (round (let ((height window-height))
+			(+ (/ height 2) (/ y (window-scale))))))
 	     (xform-radius (r)
-	       (round (let ((dim (max (sdl:width window) (sdl:height window))))
-			(* (/ r scale 2) dim))))
+	       (round r (window-scale)))
 	     (next-step ()
 	       (loop repeat (if playing (+ playing-steps (* time playing-time-scale)) 1) do
 		     (one-step)))
@@ -193,7 +195,7 @@
 					  :fg-color (sdl:any-color-but-this (visat-color visat))
 					  :bg-color (visat-color visat))
 		     )
-	       (visualise-draw-text (format nil "T = ~A scale = ~,3E log10scale = ~D" time scale (round (log scale 10))))
+	       (visualise-draw-text (format nil "T = ~As (~$ days) scale = ~,3E log10scale = ~D" time (/ time (* 24 60 60)) scale (round (log scale 10))))
 	       (sdl:update-display))
 	     (window ()
 	       (setf window (sdl:window window-width window-height
@@ -215,7 +217,8 @@
 	  (:video-resize-event (:w w :h h)
 			       (setf window-width w
 				     window-height h)
-			       (window))
+			       (window)
+			       (rescale))
 	  (:key-down-event
 	    (:key key)
 	    (cond 
