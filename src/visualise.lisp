@@ -132,7 +132,6 @@
 (defvar *visualise-window-height* 0)
 (defvar *visualise-window-width* 0)
 
-
 (defun visualise (func &key (earth-color (sdl:color :r 20 :g 100 :b 100)) 
 		  (earth-radius +radius-earth+) (visat-radius 2)
 		  (window-width *visualise-window-width*) (window-height *visualise-window-height*) (playing-steps 100)
