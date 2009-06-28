@@ -111,7 +111,7 @@
   (ieee-floats:decode-float64 (read-le-int buf offset 64)))
 (declaim (inline read-le-double))
 
-(defun load-program (file)
+(defun load-program-go (file)
   (with-open-file (s file :element-type '(unsigned-byte 8))
     (let* ((len (file-length s))
            (buf (make-array len :element-type '(unsigned-byte 8)))
@@ -128,7 +128,16 @@
 			    (read-le-double buf base))
 		    (values (read-le-int buf base)
 			    (read-le-double buf (+ base 4)))))))
-      (values (compile-instructions insns) data))))
+      (let ((lisp (compile-instructions insns)))
+	(values (eval lisp) data lisp)))))
+
+(defvar *orbit-programs* (make-hash-table :test 'equalp))
+
+(defun load-program (file)
+  (values-list
+   (or (gethash file *orbit-programs*)
+       (let ((results (multiple-value-list (load-program-go file))))
+	 (setf (gethash file *orbit-programs*) results)))))
 
 (defun test-run (filename scenario)
   (multiple-value-bind (program initial-data) (load-program filename)
@@ -136,7 +145,7 @@
 	  (input-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0))
 	  (output-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0)))
       (setf (elt input-port #x3e80) scenario)
-      (funcall (eval program) memory input-port output-port))))
+      (funcall program memory input-port output-port))))
 
 (defun describe-output (oport list)
   (loop for name in list
@@ -166,11 +175,10 @@
    :time (sim-time sim)))
 
 (defun make-simulator (filename scenario)
-  (multiple-value-bind (program initial-data) (load-program filename)
+  (multiple-value-bind (compiled initial-data) (load-program filename)
     (let ((memory (copy-seq initial-data))
 	  (input-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0))
-	  (output-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0))
-	  (compiled (eval program)))
+	  (output-port (make-array (ash 1 14) :element-type 'double-float :initial-element 0d0)))
       (setf (elt input-port #x3e80) scenario)
       (make-sim :program compiled
 		:input-port input-port
@@ -182,8 +190,15 @@
       sim
     (setf (elt input-port 2) ax
 	  (elt input-port 3) ay)
-    (unless (and (zerop ax) (zerop ay))
-      (push `(,time ,@(unless (zerop ax) `((2 ,ax))) ,@(unless (zerop ay) `((3 ,ay)))) thrusts))
+    (if (and (zerop ax) (zerop ay))
+	(when (equalp (1- time) (first (first thrusts)))
+	(let ((resets (loop for (reg val) in (rest (first thrusts))
+			    when (and (>= 3 reg) (not (zerop val)))
+			    collect `(,reg 0d0))))
+	  (when resets
+	    (push `(,time ,@resets) thrusts))))
+	(push `(,time ,@(unless (zerop ax) `((2 ,ax))) ,@(unless (zerop ay) `((3 ,ay)))) thrusts)
+      )
     (funcall program memory input-port output-port)
     (incf time)
     output-port))

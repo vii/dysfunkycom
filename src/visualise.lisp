@@ -1,5 +1,7 @@
 (in-package #:dysfunkycom)
 
+(defparameter *show-orbits* nil "A list of orbits to be displayed.")
+
 (defstruct visat
   (sx 0d0 :type double-float)
   (sy 0d0 :type double-float)
@@ -45,11 +47,12 @@
 	 (incf time)
 	 (when oport
 	   (destructuring-array-bind 
-	     (score fuel x y)
+	     (score fuel x y tx ty)
 	     oport
 	     (declare (ignore fuel))
 	     (check-type x double-float)
-	     
+	     (when (= time 1)
+	       (setf *show-orbits* (list (list 0 0 (norm (vec x y))) (list 0 0 (norm (vec tx ty))))))
 	     (cond ((zerop score)
 		    (list (make-visat :name "dysfunc" :sx x :sy y)))
 		   (t 
@@ -76,7 +79,6 @@
 	    oport
 	    (declare (ignore fuel))
 	    (check-type x double-float)
-	     
 	    (cond ((zerop score)
 		   (list (make-visat :name "dysfunc" :sx x :sy y)
 			 (make-visat :name "target" :sx (- x tx) :sy (- y ty) :color sdl:*green*)))
@@ -85,6 +87,41 @@
 		    nil)))))))))
 
 
+(defun make-visualise-oport-4 (func &optional frames)
+  (let ((time 0) (frame (pop frames)))
+   (lambda ()
+     (let ((ax 0d0) (ay 0d0))
+       (when (and frame (= time (first frame)))
+	 (loop for (control val) in (rest frame)
+	       do (cond 
+		    ((= control 2) (setf ax val))
+		    ((= control 3) (setf ay val))
+		    (t (assert (= #x3e80 control))
+		       (assert (zerop time)))))
+	 (setf frame (pop frames)))
+       (let ((oport (funcall func ax ay)))
+	 (incf time)
+	 (when oport
+	   (destructuring-array-bind 
+	    (score fuel x y fx fy)
+	    oport
+	    (declare (ignore fuel))
+	    (check-type x double-float)
+	     
+	    (cond ((zerop score)
+		   (let ((sats (list 
+				(make-visat :name "dysfunc" :sx x :sy y) 
+				(make-visat :name "fuel" :sx (- x fx) :sy (- y fy) :color sdl:*blue*)
+				(make-visat :name "moon" :sx ( - x (elt oport #x64)) :sy ( - y (elt oport #x65)) :color sdl:*yellow*)
+				))) 
+			 (loop for k below 12
+			       do (push (make-visat :name (format nil "~A" k) :sx (- x (elt oport (+ 7 (* 3 K))))
+						    :sy (- y (elt oport (+ 8 (* 3 K))))  :color sdl:*green*) sats))
+			 sats
+			 ))
+		  (t 
+		    (format *debug-io* "Finishing because score is ~A~%" score)
+		    nil)))))))))
 
 (defun visualise-draw-text (text &key (x 10) (y 10) (font sdl:*default-font*) (surface sdl:*default-surface*) (fg-color sdl:*white*) (bg-color sdl:*black*))
   (sdl:render-string-shaded text 
@@ -93,10 +130,11 @@
   (sdl:draw-font-at-* x y :font font :surface surface))
 
 (defun visualise (func &key (earth-color (sdl:color :r 20 :g 100 :b 100)) 
-		  (earth-radius +radius-earth+) (visat-radius 10)
-		  (window-width 1000) (window-height 1000) (playing-steps 100))
+		  (earth-radius +radius-earth+) (visat-radius 2)
+		  (window-width 0) (window-height 0) (playing-steps 100)
+		  (playing-time-scale 0.0001d0))
   (declare (optimize debug safety))
-  (let* (satspos (time 0) (scale (* 2 +radius-earth+)) playing)
+  (let* (satspos (time 0) (scale (* 2 +radius-earth+)) playing window)
     (labels (
 	     (rescale ()
 	       (labels ((max-one (func)
@@ -105,22 +143,22 @@
 		 (macrolet ((maybe-scale (var func)
 			      (with-gensyms (real-scale)
 				`(let ((,real-scale (coerce (max-one ,func) 'double-float)))
-				   (if (or (> ,var (* 4 ,real-scale))
-					   (< ,var (* 2 ,real-scale)))
-				       (+ 1 (* 3 ,real-scale))
+				   (if (or (> ,var (* 1.5 ,real-scale))
+					   (< ,var (* 1.2 ,real-scale)))
+				       (+ 1 (* 1.3 ,real-scale))
 				       ,var)))))
 		   (setf scale (max (maybe-scale scale #'visat-sx) (maybe-scale scale #'visat-sy))))))
 	     (xform-x (x)
-	       (round (let ((width (sdl:width sdl:*default-display*)))
+	       (round (let ((width (sdl:width window)))
 			(/ (+ width (* (/ x scale) width)) 2d0))))
 	     (xform-y (y)
-	       (round (let ((height (sdl:height sdl:*default-display*)))
+	       (round (let ((height (sdl:height window)))
 			(/ (+ height (* (/ y scale) height)) 2d0))))
 	     (xform-radius (r)
-	       (round (let ((dim (max (sdl:width sdl:*default-display*) (sdl:height sdl:*default-display*))))
+	       (round (let ((dim (max (sdl:width window) (sdl:height window))))
 			(* (/ r scale 2) dim))))
 	     (next-step ()
-	       (loop repeat (if playing playing-steps 1) do
+	       (loop repeat (if playing (+ playing-steps (* time playing-time-scale)) 1) do
 		     (one-step)))
 	     (one-step ()
 	       (setf satspos (funcall func))
@@ -137,6 +175,9 @@
 	     (draw ()
 	       (sdl:clear-display (if (crashing-into-earth) sdl:*red* sdl:*black*))
 	       (rescale)
+	       (iter (for (x y r) in *show-orbits*)
+		     (sdl:draw-circle-* (xform-x x) (xform-y y) (xform-radius r)
+					:color (sdl:color :r 255 :g 255 :b 0)))
 	       (sdl:draw-filled-circle-* (xform-x 0) (xform-y 0)
 					 (xform-radius earth-radius)
 					 :color earth-color)
@@ -144,26 +185,34 @@
 		     (sdl:draw-filled-circle-* (xform-x (visat-sx visat)) (xform-y (visat-sy visat))
 					       visat-radius
 					       :color (visat-color visat))
-		     (visualise-draw-text (format nil "~A ~,3E" (visat-name visat) (d (visat-sx visat) (visat-sy visat)))
+		     #- (and) (visualise-draw-text (format nil "~A ~,3E" (visat-name visat) (d (visat-sx visat) (visat-sy visat)))
 					  :x (xform-x (visat-sx visat)) :y (xform-y (visat-sy visat))
 					  :fg-color (sdl:any-color-but-this (visat-color visat))
 					  :bg-color (visat-color visat))
 		     )
-	       (visualise-draw-text (format nil "step = ~A scale = ~A" time scale))
-	       (sdl:update-display)))
+	       (visualise-draw-text (format nil "T = ~A scale = ~,3E log10scale = ~D" time scale (round (log scale 10))))
+	       (sdl:update-display))
+	     (window ()
+	       (setf window (sdl:window window-width window-height
+				  :title-caption "dysfunkycom"
+				  :icon-caption "ICFP 2009"
+				  :flags '(sdl:sdl-resizable)))
+	       	(unless window
+		  (error "~&Unable to create a SDL window~%"))
+		window))
       (sdl:with-init ()
 	(sdl:initialise-default-font sdl:*font-10x20*)
-	(unless (sdl:window window-width window-height
-			    :title-caption "dysfunkycom"
-			    :icon-caption "ICFP 2009"
-			    :flags '(sdl:sdl-hw-surface sdl:sdl-resizable))
-	  (error "~&Unable to create a SDL window~%"))
+	(window)
 	(setf (sdl:frame-rate) 0)
 
 	;; Enable key repeat. Set to default values.
 	(sdl:enable-key-repeat nil nil)
 	(sdl:with-events ()
 	  (:quit-event () t)
+	  (:video-resize-event (:w w :h h)
+			       (setf window-width w
+				     window-height h)
+			       (window))
 	  (:key-down-event
 	    (:key key)
 	    (cond 
@@ -190,14 +239,15 @@
 (defun controller-for-scenario (scenario)
   (cond ((> 2000 scenario) 
 	 'problem-1-controller)
-	(t
+	((> 3000 scenario)
 	 'problem-2-controller)))
 
 (defun visualiser-for-scenario (scenario)
   (cond ((> 2000 scenario) 
 	 'make-visualise-oport-1)
-	(t
-	 'make-visualise-oport-2)))
+	((> 3000 scenario)
+	 'make-visualise-oport-2)
+	(t 'make-visualise-oport-4)))
 
 (defvar *orbit-code-dir* 
   (with-standard-io-syntax (format nil "~A/../orbit-code/"  
@@ -211,8 +261,17 @@
 
 (defun visualise-scenario (scenario &key frames (controller (controller-for-scenario scenario)) 
 			   (visualiser-func (visualiser-for-scenario scenario)) (file (file-for-scenario scenario)))
-  (let ((scenario (coerce scenario 'double-float)))
-   (let ((sim (make-simulator file scenario)))
-     (visualise
-      (funcall visualiser-func (make-simple-simulator-func sim) (or frames (when controller (funcall controller (copy-sim sim)))))))))
+  (let* ((scenario (coerce scenario 'double-float))
+	 (sim (make-simulator file scenario))
+	 (*show-orbits* nil))
+    (visualise
+     (funcall visualiser-func (make-simple-simulator-func sim) (or frames (when controller (funcall controller (copy-sim sim))))))))
 
+(defun visualise-submission (filename)
+  (multiple-value-bind (frames scenario team) (read-submission filename)
+    (declare (ignore team))
+    (let* ((visualiser-func (visualiser-for-scenario scenario))
+	   (file (file-for-scenario scenario))
+	   (sim (make-simulator file scenario))
+	   (*show-orbits* nil))
+      (visualise (funcall visualiser-func (make-simple-simulator-func sim) frames)))))
