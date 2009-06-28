@@ -273,7 +273,7 @@ To see the earth disappear
 	       (for full-wait-time = (iter (for period from 0 to max-periods)
 					   (for tmp upfrom (- time wait-time hohmann-time) by enemy-period)
 					   (finding (+ wait-time (* period enemy-period))
-						    minimizing (mod tmp (floor our-period)))))
+						    minimizing (mod tmp our-period))))
 	       (finding (list (d e-x e-y) full-wait-time) minimizing (+ full-wait-time hohmann-time)))
     (terpri)))
 
@@ -290,9 +290,7 @@ To see the earth disappear
     (push (list 0 0 target-radius) *show-orbits*)
     (iter (repeat wait) (sim-step sim))
     ;; TODO: get on ellipse orbit instead
-    (print (sat-angle (sat-us sim)))
     (problem-1-controller sim target-radius)
-    (print (sat-angle (sat-us sim)))
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
 ;;; previous implementation
