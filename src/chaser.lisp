@@ -1,9 +1,12 @@
 (in-package #:dysfunkycom)
 
+(defun chaser-condition-non-changing-score (sim)
+  (let ((original-score (sim-score sim)))
+    (lambda () (= (sim-score sim) original-score))))
+
 (defun chaser-controller (sim 
 			  &key (target (sim-target sim)) (step 900) (range 500) (small-step 100)
-			  (closing-condition (let ((original-score (sim-score sim)))
-					       (lambda () (= (sim-score sim) original-score)))))
+			  (closing-condition #'chaser-condition-non-changing-score))
   (declare (optimize debug))
   (labels ((pos-after-step ()
 	     (let* ((new (copy-sim sim)) 
@@ -12,7 +15,7 @@
 	       ;; (assert (not (minusp (sim-score new))))
 	       (values (sat-sx target) (sat-sy target)))))
     (loop do
-	 (when (funcall closing-condition)
+	 (when (funcall closing-condition sim)
 	   (return))
 	  (multiple-value-bind (sx sy)
 	      (pos-after-step)
