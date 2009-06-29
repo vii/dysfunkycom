@@ -20,7 +20,7 @@
   ;; 							  (>= (incf counter) chasing-steps))))
   ;; 						 (chaser-condition-non-changing-score sim)))
   (declare (ignore end-condition chasing-steps))
-  (problem-3-controller-touch sim :target target :jumper #'controller-brute-original-jumper))
+  (controller-brute-jumper-and-touch sim :target target))
 
 (defun fuel-low-p (sim)
   (< (sim-fuel sim) 5000))

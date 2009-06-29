@@ -499,6 +499,7 @@ Outputs: a list of double-floats
 		   (sim-step sim (- (- tvx vx)) (- (- tvy vy)))))))
       (stabilise))))
 
+
 (defun stablize-to-circular-orbit (sim)
   (sim-check sim)
   (multiple-value-bind (x y vx vy)

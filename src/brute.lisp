@@ -14,8 +14,7 @@
 
 (defun problem-3-controller-touch (sim &key (target (sim-target sim)) (jumper #'controller-brute-jumper))
   (let* ((time (funcall jumper sim :target target)) (lookahead (/ time 5)))
-    (loop repeat (- (round time) lookahead)
-	  do (sim-step sim))
+    (sim-repeat-step sim (- (round time) lookahead))
     (chaser-controller-touch sim :target target :step lookahead)
 
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
@@ -24,7 +23,7 @@
   (chaser-controller sim)
   (values (reverse (sim-thrusts sim)) (sim-time sim)))
 
-(defun controller-brute-original-jumper (sim &key (target (sim-target sim)))
+(defun controller-strange-ellipse-jumper-and-wait (sim &key (target (sim-target sim)))
   (let ((start-time (sim-time sim)))
     (destructuring-bind (target-radius wait)
 	(estimate-target-radius-iteratively sim target)
@@ -32,6 +31,11 @@
       (iter (repeat wait) (sim-step sim))
       (problem-3-controller-jump sim target-radius)
       (- (sim-time sim) start-time))))
+
+(defun controller-brute-jumper-and-touch (sim &key (target (sim-target sim)))
+  (let* ((time (controller-brute-jumper sim :target target)) (lookahead *chaser-lookahead*))
+    (sim-repeat-step sim (- (round time) lookahead))
+    (chaser-controller-touch sim :target target :step lookahead)))
 
 (defun brute-jump-attempt (sim r t0 time period  angle0 target w)
   (multiple-value-bind (ex ey)
@@ -48,8 +52,8 @@
 	    target-r)))))))
 
 (defun periodic-bisect-opt (function initial-period-estimate &key 
-			    (initial-slice-width (/ initial-period-estimate 50)) 
-			    (max-val 1)
+			    (initial-slice-width (/ initial-period-estimate 5000)) 
+			    (max-val 0.5)
 			    (epsilon 1))
   (labels (
 	   (try (x)
@@ -61,6 +65,7 @@
 			  thereis (and (try i) i))))
 	      (loop 
 		    for last-val = nil then val
+		    for last-real-val = nil then real-val
 		    for last-x = nil then x
 		    for x from initial-slice by initial-slice-width
 		    for real-val = (try x)
@@ -68,7 +73,7 @@
 		    do
 		    (when (zerop val)
 		      (return (values val val x x)))
-		    (when (and last-val (> max-val (abs real-val)) (= (- val) last-val))
+		    (when (and last-val (> max-val (abs real-val)) (> max-val (abs last-real-val)) (= (- val) last-val))
 		      (return (values last-val val x last-x)))))))
     (multiple-value-bind (min-val max-val min max)
 	(initial-range)
@@ -94,5 +99,6 @@
       (let ((time (periodic-bisect-opt #'attempt period)))
 	(multiple-value-bind (angle wait-time target-r)
 	    (attempt time)
+	  (declare (ignorable angle))
 	  (loop repeat (floor wait-time) do (sim-step sim))
 	  (controller-hohmann-jump-not-stopping sim target-r))))))

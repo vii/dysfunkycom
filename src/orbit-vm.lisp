@@ -458,3 +458,7 @@
 	do (sim-check sim)
 	(sim-step sim))
   sim)
+
+(defun sim-repeat-until (sim time)
+  (assert (>= time (sim-time sim)))
+  (sim-repeat-step sim (- time (sim-time sim))))
