@@ -1,4 +1,4 @@
-(in-package :dysfunkycom)
+(in-package #:dysfunkycom)
 
 (defun find-sat-by-id (id sim)
   (find id (sim-sats sim) :test (lambda (name sat) (and (numberp (sat-name sat)) (= (sat-name sat) name)))))
@@ -71,4 +71,8 @@
 
 
 (defun problem-4-controller-go-to-moon (sim)
-  (problem-2-controller sim (sim-moon sim)))
+  (problem-1-controller sim (/ (sat-r (sim-moon sim)) 4))
+  (sim-step sim)
+  (sim-step sim)
+  (problem-3-controller sim (sim-moon sim))
+  sim)
