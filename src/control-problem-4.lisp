@@ -45,3 +45,7 @@
 	(when (fuel-low-p sim)
 	  (refuel-controller sim))
 	(finally (return (values (reverse (sim-thrusts sim)) (sim-time sim))))))
+
+
+(defun problem-4-controller-go-to-moon (sim)
+  (problem-2-controller sim (sim-moon sim)))

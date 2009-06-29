@@ -250,6 +250,13 @@
 (defun sim-fuelstation (sim)
   (elt (sim-sats sim) 1))
 
+(defun sim-moon (sim)
+  (elt (sim-sats sim) 2))
+
+(defun sim-mtarget (sim n)
+  (elt (sim-sats sim) (+ n 3)))
+
+
 (defstruct (sim (:copier %copy-sim)) 
   program
   memory
@@ -379,6 +386,7 @@
 	(output-port)
       sim
     (elt output-port 1)))
+
 
 (defun sim-update-sats (sim)
   (let ((oport (sim-output-port sim)))

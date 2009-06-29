@@ -31,12 +31,8 @@ Outputs: a list of double-floats
 	    final-delta-v
 	    estimated-time)))
 
-(defun estimate-target-radius (sim)
-  (let ((simulator (make-simple-simulator-func (copy-sim sim))))
-    (let ((output (funcall simulator)))
-      (destructuring-array-bind (nil nil x y tx ty)
-	  output
-	(d (- tx x) (- ty y))))))
+(defun estimate-target-radius (sim &optional (target (sim-target sim)))
+  (sat-r target))
 
 (defun problem-1-target-radius (sim)
   (let ((simulator (make-simple-simulator-func (copy-sim sim))))
@@ -190,8 +186,8 @@ To see the earth disappear
 	    (wait-for-angle a0))
 	  (- (sim-time sim) t0)))))
 
-(defun problem-2-calc-jump (sim)
-  (let ((target-radius (estimate-target-radius sim)))
+(defun problem-2-calc-jump (sim target)
+  (let ((target-radius (estimate-target-radius sim target)))
     (let ((tmpsim (copy-sim sim)))
       (multiple-value-bind (x0 y0)
 	  (position-and-direction tmpsim)
@@ -248,11 +244,11 @@ To see the earth disappear
 		(format t "Distance remained: ~A~%" (d (- xt x) (- yt y)))
 		(d (- xt x) (- yt y))))))))))
 
-(defun problem-2-controller (sim)
+(defun problem-2-controller (sim &optional (target (sim-target sim)))
   (multiple-value-bind (x0 y0 vx0 vy0)
       (position-and-direction-target sim)
     (multiple-value-bind (hohmann-time init-angle end-angle _ target-radius)
-	(problem-2-calc-jump sim) 
+	(problem-2-calc-jump sim target) 
       (declare (ignorable _))
       ;; 1. wait to the right position
       (let* ((radius (d x0 y0))
@@ -288,23 +284,20 @@ To see the earth disappear
       ;; return val
       (values (reverse (sim-thrusts sim)) (sim-time sim)))))
 
-(defun enemy-semi-major-axis (sim)
-  (let ((points (iter (for output = (sim-step sim))
-		      (repeat 1000)
-		      (for x = (aref output 2)) (for y = (aref output 3))
-		      (for tx = (aref output 4)) (for ty = (aref output 5))
-		      (collect (list (- tx x) (- ty y))))))
+(defun enemy-semi-major-axis (sim target)
+  (let ((points (iter (for time below 1000)
+		      (collect (enemy-position-later sim target time )))))
     (destructuring-bind (center a b phi)
 	(ellipse-from-quadratic (estimate-ellipse points))
       (declare (ignore center phi))
       (max a b))))
 
-(defun enemy-period (sim)
-  (handler-case (nth-value 2 (estimate-apogee-and-period sim (sim-target sim)))
-    (error () (orbital-period (enemy-semi-major-axis (copy-sim sim))))))
+(defun enemy-period (sim target)
+  (handler-case (nth-value 2 (estimate-apogee-and-period sim target))
+    (error () (orbital-period (enemy-semi-major-axis (copy-sim sim) target)))))
 
-(defun enemy-position-later (sim n)
-  (mapcar '- (multiple-value-list (sim-pos-at-time sim (sim-target sim) (floor n)))))
+(defun enemy-position-later (sim target n)
+  (mapcar '- (multiple-value-list (sim-pos-at-time sim target (+ (sim-time sim) (floor n))))))
 
 (defun full-hohmann-time (x0 y0 e-x e-y sim)
   (list (iter (for output = (sim-step sim))
@@ -316,16 +309,16 @@ To see the earth disappear
 	  (declare (ignore dv1 dv2))
 	  secs)))
 
-(defun estimate-target-radius-iteratively (sim &optional (iterations 20) (max-periods 50))
+(defun estimate-target-radius-iteratively (sim target &optional (iterations 20) (max-periods 50))
   (prog1 (iter (with (x y) = (destructuring-array-bind (nil nil x y)
 				 (funcall (make-simple-simulator-func (copy-sim sim)))
 			       (list x y)))
-	       (with enemy-period = (enemy-period sim))
+	       (with enemy-period = (enemy-period sim target))
 	       (with our-period = (orbital-period (d x y)))
 	       (for i from iterations above 0)
 	       (format t "~d..." i)
 	       (for time upfrom 1 by (/ enemy-period (1+ iterations)))
-	       (for (e-x e-y) = (enemy-position-later sim time)) 
+	       (for (e-x e-y) = (enemy-position-later sim target time)) 
 	       (for (wait-time hohmann-time) = (full-hohmann-time x y e-x e-y (copy-sim sim)))
 	       (for full-wait-time = (iter (for period from 0 to max-periods)
 					   (for deviation upfrom (- time wait-time hohmann-time) by enemy-period)
@@ -341,8 +334,9 @@ To see the earth disappear
 ;;; - go there (initial thrust by Hohmann)
 ;;; - stay on orbit (thrust such that our velocity matches the enemy's)
 
-(defun problem-3-controller (sim)
-  (destructuring-bind (target-radius wait) (estimate-target-radius-iteratively sim)
+(defun problem-3-controller (sim &optional (target (sim-target sim)))
+  (destructuring-bind (target-radius wait) 
+      (estimate-target-radius-iteratively sim target)
     (push (list 0 0 target-radius) *show-orbits*)
     (iter (repeat wait) (sim-step sim))
     ;; TODO: get on ellipse orbit instead
