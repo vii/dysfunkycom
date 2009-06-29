@@ -11,8 +11,7 @@
 	(iter (for time from 0 below 30000 by 1)
 	      (multiple-value-bind (ex ey)
 		  (sim-pos-at-time sim (sim-target sim) (+ t0 time))
-		(multiple-value-bind (init-dv end-dv jump-time)
-		    (hohmann r (d ex ey))
+		(let ((jump-time (hohmann-time r (d ex ey))))
 		  (when (plusp (- time jump-time))
 		    (let ((our-angle (+ angle0 (* (- time jump-time) w))))
 		      (finding (list (- time jump-time) (d ex ey) our-angle ex ey) 
@@ -24,7 +23,6 @@
       (cl-user::debug-state (sim-time sim) (normalize-angle our-angle) (normalize-angle (sat-angle (sim-us sim))))
       (problem-3-controller-jump sim target-r)
       (cl-user::debug-state ex ey (sat-x (sim-target sim)) (sat-y (sim-target sim)))
-      
       
       (chaser-controller sim)
 
