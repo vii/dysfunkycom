@@ -13,7 +13,7 @@
   (problem-3-controller-brute sim :target target
 			      :end-condition (or end-condition
 						 (let ((counter 0))
-						   (lambda () (>= (incf counter) chasing-steps))))))
+						   (lambda (sim) (declare (ignore sim)) (>= (incf counter) chasing-steps))))))
 
 (defun fuel-low-p (sim) ; TODO
   (declare (ignore sim))
@@ -26,7 +26,7 @@
   (problem-1-controller sim (* 2 (sat-r (sim-fuelstation sim))))
   (problem-4-jump sim (sim-fuelstation sim)
 		  :end-condition (let ((fuel (sim-fuel sim)))
-				   (lambda () (> (sim-fuel sim) fuel))))
+				   (lambda (sim) (> (sim-fuel sim) fuel))))
   (format t "Distance from fuel station: ~f~%" (sat-distance (sim-fuelstation sim) (sim-us sim)))
   (format t "Fuel after meeting with station: ~f~%" (sim-fuel sim)))
 

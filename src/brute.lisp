@@ -3,7 +3,8 @@
 (defun hohmann-time (r1 r2)
   (nth-value 2 (hohmann r1 r2)))
 
-(defun problem-3-controller-brute (sim &key (target (sim-target sim)) end-condition)
+(defun problem-3-controller-brute (sim &key (target (sim-target sim)) 
+				   (end-condition #'chaser-condition-non-zero-score))
   (let* ((r (sat-r (sim-us sim))) (t0 (sim-time sim))
 	(angle0 (sat-angle (sim-us sim)))
 	(w (sat-circular-orbit-vangle (sim-us sim))))

@@ -123,7 +123,7 @@ Outputs: a list of double-floats
 
 (defun problem-3-controller-jump (sim r)
   (let ((estimated-time (controller-hohmann-jump-not-stopping sim r)))
-    (loop repeat (- (round estimated-time) 2)
+    (loop repeat (- (round estimated-time) 900)
 	  do (sim-step sim))
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
