@@ -1,7 +1,5 @@
 (in-package #:dysfunkycom)
 
-(defparameter *show-orbits* nil "A list of orbits to be displayed.")
-
 (defun visualise-draw-text 
     (text &key (x 10) (y 10) (font sdl:*default-font*) (surface sdl:*default-surface*) (fg-color sdl:*white*) (bg-color sdl:*black*))
   (sdl:render-string-shaded text 

@@ -23,10 +23,10 @@
 				     (:file "math" :depends-on ("package" "lu"))
 				     (:file "macros" :depends-on ("package"))
 				     (:file "physics" :depends-on ("constants"))
-				     (:file "chase" :depends-on ("physics" "macros" "apogee")))
+				     (:file "chaser" :depends-on ("physics" "macros" "apogee"))
 				     (:file "submission" :depends-on ("constants" "orbit-vm"))
 				     (:file "apogee" :depends-on ("orbit-vm"))
-				     (:file "control" :depends-on ("physics" "macros" "apogee" "chase"))
+				     (:file "control" :depends-on ("physics" "macros" "apogee" "chaser"))
 				     (:file "control-superburn" :depends-on ("control"))
 				     )))
 
