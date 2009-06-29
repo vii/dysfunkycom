@@ -7,7 +7,7 @@
 	    (next ()
 	      (multiple-value-prog1 
 		  (poscache-pos-at-time (sim-poscache sim) sat time)
-		(assert (> 1000000 (incf time)))))
+		(assert (> 100000 (incf time)))))
 	    (wait-for-apogee ()
 	      (let ((old-r nil)
 		    sign)
