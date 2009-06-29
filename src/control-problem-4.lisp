@@ -15,7 +15,7 @@
 						 (and chasing-steps
 						      (let ((counter 0))
 							(lambda () (>= (incf counter) chasing-steps))))
-						 #'chaser-condition-non-changing-score)))
+						 (chaser-condition-non-changing-score sim))))
 
 (defun fuel-low-p (sim) ; TODO
   (declare (ignore sim))
