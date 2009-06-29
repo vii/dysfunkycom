@@ -146,3 +146,40 @@
 	(format t "~&Satellite failed with program error: ~a~%" c)
 	(format t "~&Time spent: ~a seconds~%" (length thrusts))
 	(nreverse thrusts)))))
+
+
+(defun problem-2-chaser (sim)
+  (labels ((run ()
+	     (multiple-value-bind (xt0 yt0 vxt0 vyt0)
+		 (position-and-direction-target sim)
+	       (multiple-value-bind (x0 y0 vx0 vy0)
+		   (position-and-direction sim)
+		 (let* ((r (d x0 y0))
+			(direction (normalize-vector (v- (vec xt0 yt0) (vec x0 y0))))
+			(distance (d (- xt0 x0) (- yt0 y0)))
+			(accel-wanted (vscale direction (/ distance 100000d0))) ; TODO: tune
+			(g (vscale (normalize-vector (vec (- x0) (- y0)))
+				   (/ +g-m-earth+ (^2 r))))
+			(accel-to-apply (v- accel-wanted g)))
+		   ;; (print accel-to-apply)
+		   ;; (print (list (list x0 y0) (list xt0 yt0) distance accel-to-apply))
+		   (print (list distance accel-to-apply))
+		   #+ignore
+		   (format t "~&~%Simulation Time: ~a~{~&~a : ~a~}~%"
+			   (sim-time sim)
+			   (list :satellite-pos (vec x0 y0)
+				 :target-pos (vec xt0 yt0)
+				 :satellite-speed (vec vx0 vy0)
+				 :target-speed (vec vxt0 vyt0)
+				 :estimated-next-target-position (vec xte0 yte0)
+				 :estimated-next-target-speed (vec vxte0 vyte0)
+				 :direction direction
+				 :distance distance
+				 :g g
+				 :accel-wanted accel-wanted
+				 :accel-to-apply accel-to-apply
+				 )) 
+		   (sim-step sim (- (vx accel-to-apply)) (- (vy accel-to-apply)))
+		   )))))
+    (loop do (run)
+	  until (not (zerop (sim-score sim))))))
