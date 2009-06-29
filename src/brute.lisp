@@ -16,14 +16,13 @@
   (chaser-controller sim)
   (values (reverse (sim-thrusts sim)) (sim-time sim)))
 
-
 (defun controller-brute-jumper (sim &key (target (sim-target sim)))
   (let* ((r (sat-r (sim-us sim))) (t0 (sim-time sim))
 	(angle0 (sat-angle (sim-us sim)))
 	(w (sat-circular-orbit-vangle (sim-us sim))))
     (destructuring-bind (wait-time target-r)
 	(iter (for last-time first 0 then time-base)
-	      (for time-base first 1000 then (* time-base 2))
+	      (for time-base first 1000 then (+ time-base 10000))
 	      (for result =
 		   (iter (for time from last-time below time-base by 1)
 			 (multiple-value-bind (ex ey)

@@ -331,8 +331,8 @@
   (normalize-vangle (- (sat-angle sat) (sat-oangle sat))))
 
 (defun sat-distance (sat1 sat2)
-  (d (- (sat-vx sat1) (sat-vx sat2))
-     (- (sat-vy sat1) (sat-vy sat2))))
+  (d (- (sat-x sat1) (sat-x sat2))
+     (- (sat-y sat1) (sat-y sat2))))
 
 (defun make-sats-for-scenario (scenario sim)
   (let (sats)
