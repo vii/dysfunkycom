@@ -35,7 +35,7 @@
     (tformat sim "Fuel before meeting with station: ~f~%" (sim-fuel sim)))
   (tformat sim "Stabilizing orbit.~%")
   (sim-check sim)
-  (controller-stabilise-to-circular-orbit sim)
+  (controller-wait-and-stabilise-to-circular-orbit sim)
   (sim-check sim)
   (problem-1-controller sim (* 2 (sat-r (sim-fuelstation sim))))
   (problem-4-jump sim (sim-fuelstation sim)
