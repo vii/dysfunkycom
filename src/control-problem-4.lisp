@@ -9,9 +9,10 @@
     (iter (for sat in sats)
 	  (finding sat minimizing (sat-distance sat us)))))
 
-(defun problem-4-jump (sim target &optional (steps 10))
+(defun problem-4-jump (sim target)
   (problem-3-controller-brute sim :target target
-			      :end-condition (let ((counter 0)) (lambda () (>= (incf counter) steps)))))
+			      :end-condition (let ((fuel (sim-fuel sim)))
+					       (lambda () (> (sim-fuel sim) fuel)))))
 
 (defun fuel-low-p (sim) ; TODO
   (declare (ignore sim))
@@ -22,7 +23,7 @@
     (sim-step sim)
     (format t "Fuel before meeting with station: ~f~%" (sim-fuel sim)))
   (problem-1-controller sim (* 2 (sat-r (sim-fuelstation sim))))
-  (problem-4-jump sim (sim-fuelstation sim) 10)
+  (problem-4-jump sim (sim-fuelstation sim))
   (format t "Distance from fuel station: ~f~%" (sat-distance (sim-fuelstation sim) (sim-us sim)))
   (format t "Fuel after meeting with station: ~f~%" (sim-fuel sim)))
 
