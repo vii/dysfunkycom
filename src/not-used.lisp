@@ -214,3 +214,9 @@
     (controller-stabilise-to-circular-orbit sim)
     (problem-2-controller sim fuel-station)
     (controller-stabilise-to-circular-orbit sim)))
+
+(defun give-initial-states (sim var-name steps)
+  (set var-name
+       (loop repeat steps
+	     collect (sim-sats sim)
+	     do (sim-step sim))))

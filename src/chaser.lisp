@@ -12,7 +12,8 @@
 	     (let* ((new (copy-sim sim)) 
 		    (target (sim-similar-sat new target)))
 	       (loop repeat step do (sim-step new))
-	       ;; (assert (not (minusp (sim-score new))))
+	       (assert (and (not (minusp (sim-score new)))
+			    (not (minusp (sim-fuel new)))))
 	       (values (sat-sx target) (sat-sy target)))))
     (loop do
 	 (when (funcall closing-condition sim)
