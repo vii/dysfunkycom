@@ -185,5 +185,5 @@
 		  (funcall (or controller (controller-for-scenario scenario)) sim) 
 		  (write-submission-from-frames scenario 
 						(reverse (sim-thrusts sim))
-						(format nil "~A-~D.osf" prefix (round scenario)))
+						(format nil "~A~D.osf" prefix (round scenario)))
 		  (sim-score sim))))))
