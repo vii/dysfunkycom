@@ -51,7 +51,6 @@
 			    (initial-slice-width (/ initial-period-estimate 50)) (slices 200)
 			    (max-val 1)
 			    (epsilon 1))
-  (declare (optimize debug))
   (labels (
 	   (try (x)
 	     (let ((val (funcall function x)))
