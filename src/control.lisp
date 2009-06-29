@@ -271,7 +271,7 @@ Outputs: a list of double-floats
   (list (iter (for output = (sim-step sim))
 	      (for x = (aref output 2)) (for y = (aref output 3))
 	      (for angle = (- (normalize-angle (calc-angle-between-vectors (vec x y) (vec e-x e-y))) pi))
-	      (repeat (orbital-period (d x0 y0)))
+	      (repeat (ceiling (orbital-period (d x0 y0))))
 	      (finding (sim-time sim) maximizing (abs angle)))
 	(multiple-value-bind (dv1 dv2 secs) (hohmann (d x0 y0) (d e-x e-y))
 	  (declare (ignore dv1 dv2))
