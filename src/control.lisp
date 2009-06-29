@@ -505,3 +505,22 @@ To see the earth disappear
     (loop do (run)
 	  until (not (zerop (sim-score sim))))
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
+
+
+(defun controller-stabilise-to-circular-orbit (sim)
+  (symbol-macrolet ((us (sim-us sim)))
+    (labels (
+	     (scale (speed)
+	     (let ((vec (vscale (multiple-value-bind (x y vx vy)
+				    (position-and-direction sim)
+				  (adjust-direction
+				   (calc-unit-tangent-vector (vec x y))
+				     (vec vx vy))) speed)))
+	       (values (vx vec) (vy vec))))
+	     (stabilise ()
+	       (let ((vx (sat-vx us))
+		   (vy (sat-vy us)))
+		 (multiple-value-bind (tvx tvy)
+		     (scale (orbital-speed (sat-r us)))
+		   (sim-step sim (- (- tvx vx)) (- (- tvy vy)))))))
+      (stabilise))))
