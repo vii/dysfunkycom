@@ -402,11 +402,7 @@
     (elt output-port 1)))
 
 (defun sim-done (sim)
-  (cond ((> 4000 (sim-scenario sim))
-	 (not (zerop (sim-score sim))))
-	(t
-	 (or (minusp (sim-score sim))
-	     (loop for k below +problem-4-sats+ always (sat-done (sim-mtarget sim k)))))))
+  (not (zerop (sim-score sim))))
 
 (defun sim-update-sats (sim)
   (let ((oport (sim-output-port sim)))
