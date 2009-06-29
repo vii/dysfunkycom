@@ -1,0 +1,40 @@
+Team:
+  dysfunkycom (#663)
+
+Members:
+  Fremlin, John  <not@just.any.name>
+  Huang, Jianshi <jianshi.huang@gmail.com>
+  Khuong, Paul   <pvk@pvk.ca>
+  Salvi, Peter   <vukung@yahoo.com>
+
+Language:
+  Common Lisp (SBCL on Linux(32/64))
+
+Compilation Instructions
+------------------------
+1. Get the needed libraries (see http://cliki.net/), ie.
+  iterate alexandria cl-fad lispbuilder-sdl ieee-floats
+(some of these are included in the addons subdirectory).
+2. Put (a symbolic link of) dysfunkycom.asd in your ASDF system registry path.
+3. Fire up SBCL, do a (require :dysfunkycom), eliminate problems as needed :)
+4. (in-package :dysfunkycom)
+
+Creating submissions
+--------------------
+1. Make sure that the .obf files are on the path.
+2. Call (write-many-submissions '(2001 2002 2003 ...) :prefix "/tmp/663-")
+   ... where of course '(2001 2002 2003 ...) and "/tmp/663-" are to be changed.
+
+You can visualize a submit file with
+  (visualise-submission "/tmp/663-2001.osf")
+and there may be other cool features included in this package.
+(note the *auto-zoom* and *visualise-max-radius* variables)
+
+For the 4th problem, we have another controller, called
+  problem-4-fixed-order-controller
+with which you can fix the order of satellites (using 'FUEL for refueling).
+
+As for the algorithm, there's not much time left, so just believe that it
+works :) But we'll be happy to answer your questions after the contest.
+
+The dysfunkycom team
