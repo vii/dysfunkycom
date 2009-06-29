@@ -6,7 +6,7 @@
 
 (defun chaser-controller (sim 
 			  &key (target (sim-target sim)) (step 900) (range 500) (small-step 100)
-			  (closing-condition #'chaser-condition-non-changing-score))
+			  (closing-condition (chaser-condition-non-changing-score sim)))
   (declare (optimize debug))
   (labels ((pos-after-step ()
 	     (let* ((new (copy-sim sim)) 
