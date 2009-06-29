@@ -4,8 +4,8 @@
   (nth-value 2 (hohmann r1 r2)))
 
 (defun problem-3-controller-brute (sim &key (target (sim-target sim)) 
-				   (end-condition #'chaser-condition-non-zero-score))
-  (let ((time (controller-brute-jumper sim :target target :end-condition #'chaser-condition-non-zero-score)))
+				   (end-condition (chaser-condition-non-changing-score sim)))
+  (let ((time (controller-brute-jumper sim :target target :end-condition end-condition)))
     (loop repeat (- (round time) 900)
 	  do (sim-step sim))
     (chaser-controller sim :closing-condition end-condition)
@@ -14,7 +14,6 @@
 
 (defun problem-3-controller-suicide (sim)
   (chaser-controller sim)
-  
   (values (reverse (sim-thrusts sim)) (sim-time sim)))
 
 
