@@ -96,4 +96,13 @@
 	(while (>= score 0))
 	(finally (return (values (reverse (sim-thrusts sim)) (sim-time sim))))))
 
+(defun next-satellite (sim)
+  (iter (for sat in-sequence (sim-sats sim))
+	(unless (sat-done sat)
+	  (finding sat minimizing (- (sat-r sat) (sat-r (sim-us sim)))))))
 
+(defun problem-4-controller-hack (sim)
+  (loop until (> 1000 (sim-fuel sim)) do
+	(controller-brute-jumper-and-touch sim  :target (next-satellite sim))
+	(controller-stabilise-to-circular-orbit sim)))
+ 

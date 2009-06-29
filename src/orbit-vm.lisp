@@ -340,7 +340,7 @@
   (let (sats)
     (labels ((add (sat)
 	       (push sat sats)))
-      (add (make-sat :name :us))
+      (add (make-sat :name :us :done t))
       
       (cond ((> scenario 4000)
 	     (add (make-sat :name :fuel :oport-offset 4 :done t))
