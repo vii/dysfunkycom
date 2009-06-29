@@ -17,9 +17,8 @@
 							(lambda () (>= (incf counter) chasing-steps))))
 						 (chaser-condition-non-changing-score sim))))
 
-(defun fuel-low-p (sim) ; TODO
-  (declare (ignore sim))
-  t)
+(defun fuel-low-p (sim)
+  (< (sim-fuel sim) 5000))
 
 (defun refuel-controller (sim)
   (let ((sim (copy-sim sim)))
@@ -36,13 +35,14 @@
   (format t "Stabilizing orbit.~%")
   (stablize-to-circular-orbit sim)
   (format t "Going for satellite ~d.~%" (sat-name sat))
-  (problem-4-jump sim sat))
+  (problem-4-jump sim sat)
+  (format t "Score after meeting with satellite: ~f~%" (sim-score sim)))
 
 (defun problem-4-controller (sim)
   (iter (with satellites = '(0 1 2 3 4 5 6 7 8 9 10))
 	(while satellites)
 	(for nearest = (nearest-satellite satellites sim))
-	(when (fuel-low-p sim)
+	(when (or (fuel-low-p sim))
 	  (refuel-controller sim))
 	(go-for-satellite nearest sim)
 	(for prev-score first 0 then score)
