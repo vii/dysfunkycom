@@ -67,6 +67,8 @@ Outputs: a list of double-floats
 	  (values x0 y0 (- x1 x0) (- y1 y0)))))))
 
 (defun problem-1-controller (sim &optional (r (problem-1-target-radius sim)))
+  (push (list 0 0 r) *show-orbits*)
+  (push (list 0 0 (sat-r (sim-us sim))) *show-orbits*)
   (multiple-value-bind (x y)
       (position-and-direction sim)
     (labels ((boost (speed)
@@ -204,21 +206,46 @@ To see the earth disappear
 	    target-radius		; target radius
 	    ))))))
 
-(defun problem-2-chaser (sim &key (range 500) (min-fuel 100))
-  (let ((ax 0d0) (ay 0d0))
-    (iter (for output = (sim-step sim ax ay))
-	  (setf ax 0d0 ay 0d0)
-	  (destructuring-array-bind (score fuel nil nil xo yo) output
-				    (until (plusp score))
-				    (let ((d (d xo yo)))
-				      (unless (> range d)
-					(setf ax (/ (- xo) d )
-					      ay (/ (- yo) d )))
+(defun estimate-our-states-using-sim (sim steps)
+  (let ((simulator (make-simple-simulator-func (copy-sim sim))))
+    (loop repeat (1- steps)
+	  do (funcall simulator))
+    (destructuring-array-bind (nil nil x0 y0)
+	(funcall simulator)
+      (destructuring-array-bind (nil nil x1 y1)
+	  (funcall simulator)
+	(values x0 y0 (- x1 x0) (- y1 y0))))))
 
-				      (when (>= (+ min-fuel (d ax ay)) fuel)
-					 (setf ax 0d0 ay 0d0))))))
-
-  (values (reverse (sim-thrusts sim)) (sim-time sim)))
+(defun problem-2-chaser (sim &optional (catch-up-time 100))
+  (multiple-value-bind (xt0 yt0 vxt0 vyt0)
+      (position-and-direction-target sim)
+    (multiple-value-bind (xte0 yte0)
+	(estimate-satellite-states xt0 yt0 vxt0 vyt0 0d0 0d0 catch-up-time)
+      (multiple-value-bind (xe0 ye0)
+	  (estimate-our-states-using-sim sim catch-up-time)
+	(let* ((distance-vec (vec (- xte0 xe0) (- yte0 ye0)))
+	       (distance (norm distance-vec))
+	       (direction (normalize-vector distance-vec))
+	       (a (/ (* 2 distance) (^2 catch-up-time)))
+	       (accel-vec (vscale direction a)))
+	  (print distance)
+	  (sim-step sim (- (vx accel-vec)) (- (vy accel-vec)))
+	  (loop repeat (1- catch-up-time)
+		do (sim-step sim 0d0 0d0))
+	  (multiple-value-bind (x y vx vy)
+	      (position-and-direction sim)
+	    (multiple-value-bind (xt yt)
+		(position-and-direction-target sim)
+	      (print (v- (vec xt yt) (vec xte0 yte0)))
+	      (print (v- (vec x y) (vec xe0 ye0)))
+	      (let* ((direction (normalize-vector (vec vx vy)))
+		     (dir-wanted (adjust-direction (calc-unit-tangent-vector (vec x y))
+						   direction))
+		     (v-wanted (sqrt (/ +g-m-earth+ (d x y))))
+		     (dv (v- (vscale dir-wanted v-wanted) (vec vx vy))))
+		(prog1
+		    (sim-step sim (- (vx dv)) (- (vy dv)))
+		  (print (d (- xt x) (- yt y))))))))))))
 
 (defun problem-2-controller (sim)
   (multiple-value-bind (x0 y0 vx0 vy0)
@@ -254,7 +281,7 @@ To see the earth disappear
 
       ;; 3. feedback loop for adjustment
       
-					;(problem-2-chaser sim)
+      (problem-2-chaser sim)
 
       ;; return val
       (values (reverse (sim-thrusts sim)) (sim-time sim)))))
