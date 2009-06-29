@@ -9,17 +9,7 @@
     (iter (for sat in sats)
 	  (finding sat minimizing (sat-distance sat us)))))
 
-(defun problem-4-jump (sim target &key end-condition chasing-steps)
-  ;;   (problem-3-controller-brute sim :target target
-  ;; 			      :jumper #'controller-brute-original-jumper
-  ;; 			      :end-condition (or end-condition
-  ;; 						 (and chasing-steps
-  ;; 						      (let ((counter 0))
-  ;; 							(lambda (sim)
-  ;; 							  (declare (ignore sim))
-  ;; 							  (>= (incf counter) chasing-steps))))
-  ;; 						 (chaser-condition-non-changing-score sim)))
-  (declare (ignore end-condition chasing-steps))
+(defun problem-4-jump (sim target)
   (controller-brute-jumper-and-touch sim :target target))
 
 (defun fuel-low-p (sim)
@@ -38,9 +28,7 @@
   (controller-stabilise-to-circular-orbit sim)
   (sim-check sim)
   (problem-1-controller sim (* 2 (sat-r (sim-fuelstation sim))))
-  (problem-4-jump sim (sim-fuelstation sim)
-		  :end-condition (let ((fuel (sim-fuel sim)))
-				   (lambda (sim) (> (sim-fuel sim) fuel))))
+  (problem-4-jump sim (sim-fuelstation sim))
   (tformat sim "Distance from fuel station: ~f~%" (sat-distance (sim-fuelstation sim) (sim-us sim)))
   (tformat sim "Fuel after meeting with station: ~f~%" (sim-fuel sim))
   (tformat sim "Stabilizing orbit.~%")
@@ -66,9 +54,7 @@
     (tformat sim "Fuel before meeting with station: ~f~%" (sim-fuel sim)))
   (problem-1-controller sim (* 20 (sat-r (sim-fuelstation sim))))
   (change-direction-and-stablise sim)
-  (problem-4-jump sim (sim-fuelstation sim)
-		  :end-condition (let ((fuel (sim-fuel sim)))
-				   (lambda (sim) (> (sim-fuel sim) fuel)))) 
+  (problem-4-jump sim (sim-fuelstation sim)) 
   (tformat sim "Distance from fuel station: ~f~%" (sat-distance (sim-fuelstation sim) (sim-us sim)))
   (tformat sim "Fuel after meeting with station: ~f~%" (sim-fuel sim)))
 
@@ -79,9 +65,14 @@
   (problem-4-jump sim sat)
   (tformat sim "Fuel after meeting with satellite: ~f~%" (sim-fuel sim)))
 
+(defparameter *get-only* 11)
+
 (defun problem-4-controller (sim)
   (iter (with satellites = '(0 1 2 3 4 5 6 7 8 9 10))
 	(while satellites)
+	(when (<= (length satellites) (- 11 *get-only*))
+	  (controller-stabilise-to-circular-orbit sim)
+	  (leave))
 	(for nearest = (nearest-satellite satellites sim))
 	(go-for-satellite nearest sim)
 	(for prev-score first 0 then score)

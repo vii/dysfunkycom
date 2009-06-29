@@ -497,8 +497,8 @@ Outputs: a list of double-floats
 		 (multiple-value-bind (tvx tvy)
 		     (scale (orbital-speed (sat-r us)))
 		   (sim-step sim (- (- tvx vx)) (- (- tvy vy)))))))
-      (stabilise))))
-
+      (stabilise)))
+  (sim-repeat-step sim 10))
 
 (defun stablize-to-circular-orbit (sim)
   (sim-check sim)
