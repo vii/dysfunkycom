@@ -334,6 +334,8 @@
   (d (- (sat-x sat1) (sat-x sat2))
      (- (sat-y sat1) (sat-y sat2))))
 
+(defconstant +problem-4-sats+ 11)
+
 (defun make-sats-for-scenario (scenario sim)
   (let (sats)
     (labels ((add (sat)
@@ -343,7 +345,7 @@
       (cond ((> scenario 4000)
 	     (add (make-sat :name :fuel :oport-offset 4 :done t))
 	     (add (make-sat :name :moon :oport-offset #x64 :done t))
-	     (loop for k from 0 to 10
+	     (loop for k below +problem-4-sats+
 		   do (add (make-sat :name k :oport-offset (+ 7 (* 3 k))))))
 	    ((> scenario 2000)
 	     (add (make-sat :name 0 :oport-offset 4))))
@@ -399,6 +401,12 @@
       sim
     (elt output-port 1)))
 
+(defun sim-done (sim)
+  (cond ((> 4000 (sim-scenario sim))
+	 (not (zerop (sim-score sim))))
+	(t
+	 (or (minusp (sim-score sim))
+	     (loop for k below +problem-4-sats+ always (sat-done (sim-mtarget sim k)))))))
 
 (defun sim-update-sats (sim)
   (let ((oport (sim-output-port sim)))
