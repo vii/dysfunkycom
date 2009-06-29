@@ -502,6 +502,8 @@ Outputs: a list of double-floats
 
 (defun controller-wait-and-stabilise-to-circular-orbit (sim &key (step 100) (scale 10d0))
   (sim-check sim)
+  (controller-stabilise-to-circular-orbit sim)
+  #+ignore
   (symbol-macrolet ((us (sim-us sim)))
     (labels (
 	     (scale (speed)
