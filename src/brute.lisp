@@ -6,17 +6,17 @@
 (defun problem-3-controller-brute (sim &key (target (sim-target sim)) (jumper #'controller-brute-jumper)
 				   (end-condition (chaser-condition-non-changing-score sim)))
   (let ((time (funcall jumper sim :target target)))
-    (loop repeat (- (round time) 900)
+    (loop repeat (- (round time) *chaser-lookahead*)
 	  do (sim-step sim))
     (chaser-controller sim :target target :closing-condition end-condition)
 
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
 (defun problem-3-controller-touch (sim &key (target (sim-target sim)) (jumper #'controller-brute-jumper))
-  (let ((time (funcall jumper sim :target target)))
-    (loop repeat (- (round time) 900)
+  (let* ((time (funcall jumper sim :target target)) (lookahead (/ time 5)))
+    (loop repeat (- (round time) lookahead)
 	  do (sim-step sim))
-    (chaser-controller-touch sim :target target)
+    (chaser-controller-touch sim :target target :step lookahead)
 
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
