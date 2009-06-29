@@ -351,6 +351,8 @@ To see the earth disappear
 	    (evx (sat-vx e)) (evy (sat-vy e)))
 	(sim-step sim (- vx evx) (- vy evy))))
 
+    (chaser-controller sim)
+
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
 ;;; previous implementation
