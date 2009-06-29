@@ -67,6 +67,8 @@ Outputs: a list of double-floats
 	  (values x0 y0 (- x1 x0) (- y1 y0)))))))
 
 (defun problem-1-controller (sim &optional (r (problem-1-target-radius sim)))
+  (push (list 0 0 r) *show-orbits*)
+  (push (list 0 0 (sat-r (sim-us sim))) *show-orbits*)
   (multiple-value-bind (x y)
       (position-and-direction sim)
     (labels ((boost (speed)
