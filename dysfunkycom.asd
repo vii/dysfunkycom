@@ -28,6 +28,7 @@
 				     (:file "apogee" :depends-on ("orbit-vm"))
 				     (:file "control" :depends-on ("physics" "macros" "apogee" "chaser"))
 				     (:file "control-superburn" :depends-on ("control"))
+				     (:file "control-problem-4" :depends-on ("control"))
 				     )))
 
   :depends-on (

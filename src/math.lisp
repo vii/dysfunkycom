@@ -16,6 +16,12 @@
   (vec (- (vx v1) (vx v2))
        (- (vy v1) (vy v2))))
 
+(defun v* (v d)
+  (vec (* (vx v) d) (* (vy v) d)))
+
+(defun v/ (v d)
+  (v* v (/ d)))
+
 (defun vdot* (v1 v2)
   (+ (* (vx v1) (vx v2))
      (* (vy v1) (vy v2))))
