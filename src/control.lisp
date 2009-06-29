@@ -97,9 +97,8 @@ Outputs: a list of double-floats
 	  (boost (- (d vx vy) (sqrt (/ +g-m-earth+ r))))) 
 	(values (reverse (sim-thrusts sim)) (sim-time sim))))))
 
-(defun problem-3-controller-jump (sim r)
-  (multiple-value-bind (x y)
-      (position-and-direction sim)
+(defun controller-hohmann-jump-not-stopping (sim r)
+  (let ((x (sat-x (sim-us sim))) (y (sat-y (sim-us sim))))
     (labels ((boost (speed)
 	       (let ((vec (vscale (multiple-value-bind (x y vx vy)
 				      (position-and-direction sim)
@@ -120,9 +119,13 @@ Outputs: a list of double-floats
 	  (hohmann (d x y) r)
 	(declare (ignorable end-dv))
 	(boost (- init-dv))
-	(loop repeat (- (round estimated-time) 2)
-	      for output = (sim-step sim))
-	(values (reverse (sim-thrusts sim)) (sim-time sim))))))
+	estimated-time))))
+
+(defun problem-3-controller-jump (sim r)
+  (let ((estimated-time (controller-hohmann-jump-not-stopping sim r)))
+    (loop repeat (- (round estimated-time) 2)
+	  do (sim-step sim))
+    (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
 (defun problem-1-controller-burn (sim &key (r (problem-1-target-radius sim)) (fuel 9000))
   "This does not work
@@ -345,6 +348,20 @@ To see the earth disappear
     (chaser-controller sim)
 
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
+
+
+(defun controller-ellipse-jumper (sim &optional (target (sim-target sim)))
+  (destructuring-bind (target-radius wait) 
+      (estimate-target-radius-iteratively sim target)
+    (push (list 0 0 target-radius) *show-orbits*)
+    (iter (repeat wait) (sim-step sim))
+    ;; TODO: get on ellipse orbit instead
+    (problem-3-controller-jump sim target-radius)
+
+    (chaser-controller sim)
+
+    (values (reverse (sim-thrusts sim)) (sim-time sim))))
+
 
 ;;; previous implementation
 ;;; not used now
