@@ -8,7 +8,7 @@
 	(angle0 (sat-angle (sim-us sim)))
 	(w (sat-circular-orbit-vangle (sim-us sim))))
     (destructuring-bind (wait-time target-r our-angle ex ey)
-	(iter (for time from 0 below 30000 by 1)
+	(iter (for time from 0 below 200000 by 1)
 	      (multiple-value-bind (ex ey)
 		  (sim-pos-at-time sim (sim-target sim) (+ t0 time))
 		(let ((jump-time (hohmann-time r (d ex ey))))
