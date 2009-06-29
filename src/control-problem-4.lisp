@@ -18,6 +18,13 @@
 (defun tformat (sim str &rest args)
   (apply #'format t (concatenate 'string "[~d] " str) (sim-time sim) args))
 
+(defun turn-if-needed (sim)
+  (let ((fuel-speed (sat-vangle (sim-fuelstation sim)))
+	(our-speed (sat-vangle (sim-us sim))))
+    (when (minusp (* fuel-speed our-speed))
+      (tformat sim "Turn around (fuel: ~f).~%" (sim-fuel sim))
+      (change-direction-and-stablise sim))))
+
 (defun refuel-controller (sim)
   (sim-check sim)
   (let ((sim (copy-sim sim)))
@@ -27,6 +34,7 @@
   (sim-check sim)
   (controller-wait-and-stabilise-to-circular-orbit sim)
   (sim-check sim)
+  (turn-if-needed sim)
   (problem-1-controller sim (* 2 (sat-r (sim-fuelstation sim))))
   (problem-4-jump sim (sim-fuelstation sim))
   (tformat sim "Distance from fuel station: ~f~%" (sat-distance (sim-fuelstation sim) (sim-us sim)))
@@ -46,7 +54,7 @@
 (defun change-direction-and-stablise (sim)
   (let* ((us (sim-us sim)))
     (sim-step sim (* 2 (sat-vx us)) (* 2 (sat-vy us)))
-    (stablize-to-circular-orbit sim)))
+    (controller-stabilise-to-circular-orbit sim)))
 
 (defun refuel-controller-4004 (sim)
   (let ((sim (copy-sim sim)))
@@ -68,6 +76,7 @@
 (defparameter *get-only* 11)
 
 (defun problem-4-controller (sim)
+  (push (list 0 0 (* 5 (sat-r (sim-fuelstation sim)))) *show-orbits*)
   (iter (with satellites = '(0 1 2 3 4 5 6 7 8 9 10))
 	(while satellites)
 	(when (<= (length satellites) (- 11 *get-only*))
@@ -86,6 +95,16 @@
 	  (refuel-controller sim))
 	(while (>= score 0))
 	(finally (return (values (reverse (sim-thrusts sim)) (sim-time sim))))))
+
+(defun problem-4-fixed-order-controller (order)
+  (lambda (sim)
+    (iter (for id in order)
+	  (for sat = (and (numberp id) (find-sat-by-id id sim)))
+	  (if sat
+	      (go-for-satellite sat sim)
+	      (refuel-controller sim)))
+    (controller-stabilise-to-circular-orbit sim)
+    (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
 (defun next-satellite (sim)
   (iter (for sat in-sequence (sim-sats sim))
