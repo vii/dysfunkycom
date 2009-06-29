@@ -4,7 +4,20 @@
   (nth-value 2 (hohmann r1 r2)))
 
 (defun problem-3-controller-brute (sim &key (target (sim-target sim)) 
-				   (end-condition #'chaser-condition-non-zero-score))
+				   (end-condition (chaser-condition-non-changing-score sim)))
+  (let ((time (controller-brute-jumper sim :target target)))
+    (loop repeat (- (round time) 900)
+	  do (sim-step sim))
+    (chaser-controller sim :closing-condition end-condition)
+
+    (values (reverse (sim-thrusts sim)) (sim-time sim))))
+
+(defun problem-3-controller-suicide (sim)
+  (chaser-controller sim)
+  (values (reverse (sim-thrusts sim)) (sim-time sim)))
+
+
+(defun controller-brute-jumper (sim &key (target (sim-target sim)))
   (let* ((r (sat-r (sim-us sim))) (t0 (sim-time sim))
 	(angle0 (sat-angle (sim-us sim)))
 	(w (sat-circular-orbit-vangle (sim-us sim))))
@@ -28,13 +41,4 @@
 	      (finally (return result)))
       (loop until (>= (sim-time sim) (+ t0 wait-time))
 	 do (sim-step sim))
-      (problem-3-controller-jump sim target-r)
-      
-      (chaser-controller sim :closing-condition end-condition)
-
-      (values (reverse (sim-thrusts sim)) (sim-time sim)))))
-
-(defun problem-3-controller-suicide (sim)
-  (chaser-controller sim)
-  
-  (values (reverse (sim-thrusts sim)) (sim-time sim)))
+      (controller-hohmann-jump-not-stopping sim target-r))))
