@@ -14,7 +14,9 @@
 			      :end-condition (or end-condition
 						 (and chasing-steps
 						      (let ((counter 0))
-							(lambda () (>= (incf counter) chasing-steps))))
+							(lambda (sim)
+							  (declare (ignore sim))
+							  (>= (incf counter) chasing-steps))))
 						 (chaser-condition-non-changing-score sim))))
 
 (defun fuel-low-p (sim)
@@ -24,6 +26,7 @@
   (let ((sim (copy-sim sim)))
     (sim-step sim)
     (format t "Fuel before meeting with station: ~f~%" (sim-fuel sim)))
+  (stablize-to-circular-orbit sim)
   (problem-1-controller sim (* 2 (sat-r (sim-fuelstation sim))))
   (problem-4-jump sim (sim-fuelstation sim)
 		  :end-condition (let ((fuel (sim-fuel sim)))
@@ -35,7 +38,7 @@
   (format t "Stabilizing orbit.~%")
   (stablize-to-circular-orbit sim)
   (format t "Going for satellite ~d.~%" (sat-name sat))
-  (problem-4-jump sim sat)
+  (problem-4-jump sim sat :chasing-steps 10)
   (format t "Score after meeting with satellite: ~f~%" (sim-score sim)))
 
 (defun problem-4-controller (sim)
