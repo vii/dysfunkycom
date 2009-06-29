@@ -5,7 +5,8 @@
     (lambda (sim) (/= (sim-score sim) original-score))))
 
 (defun chaser-controller (sim 
-			  &key (target (sim-target sim)) (step 900) (range 500) (small-step 100)
+			  &key (target (sim-target sim)) (step 900) (range 1000) (small-step 100)
+			  (mini-step 10)
 			  (closing-condition (chaser-condition-non-changing-score sim)))
   (declare (optimize debug))
   (labels ((pos-after-step ()
@@ -15,7 +16,7 @@
 	       ;; (assert (not (minusp (sim-score new))))
 	       (values (sat-sx target) (sat-sy target)))))
     (loop do
-	 (when (funcall closing-condition sim)
+	 (when (funcall closing-condition)
 	   (return))
 	  (multiple-value-bind (sx sy)
 	      (pos-after-step)
@@ -23,4 +24,5 @@
 		   (loop repeat small-step do
 			 (sim-step sim)))
 		  (t
-		   (sim-step sim (/ sx step) (/ sy step))))))))
+		   (sim-step sim (/ sx step) (/ sy step))
+		   (loop repeat mini-step do (sim-step sim))))))))
