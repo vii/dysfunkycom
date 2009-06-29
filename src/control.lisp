@@ -527,7 +527,6 @@ Outputs: a list of double-floats
 	    (sim-repeat-step sim step))
       (controller-stabilise-to-circular-orbit sim)
       (sim-repeat-step sim step))))
->>>>>>> 3381a32e57bf976fed3142d289230fd21d804e84:src/control.lisp
 
 (defun stablize-to-circular-orbit (sim)
   (sim-check sim)
