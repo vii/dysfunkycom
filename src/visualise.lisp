@@ -69,7 +69,7 @@
 		   (setf frame (pop frames)))
 		 (sim-step sim ax ay))
 	       (unless (zerop (sim-score sim))
-		 (return-from visualise (values (sim-score sim) sim)))
+		 (return-from visualise (values sim (sim-score sim) (sim-fuel sim) (sim-time sim))))
 	       (incf time))
 	     (skip-frames (n)
 	       (loop repeat n do (one-step)))
@@ -171,7 +171,11 @@
 	 (sim (make-simulator file scenario))
 	 (*show-orbits* nil))
     (visualise sim :frames 
-	       (or frames (when controller (funcall controller (copy-sim sim)))))))
+	       (or frames 
+		   (when controller 
+		     (let ((new (copy-sim sim))) 
+		       (funcall controller new)
+		       (reverse (sim-thrusts new))))))))
 
 (defun visualise-submission (filename)
   (multiple-value-bind (frames scenario) (read-submission filename)

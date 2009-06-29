@@ -342,11 +342,6 @@ To see the earth disappear
     ;; TODO: get on ellipse orbit instead
     (problem-3-controller-jump sim target-radius)
 
-    (let ((us (sim-us sim)) (e (sim-target sim)))
-      (let ((vx (sat-vx us)) (vy (sat-vy us))
-	    (evx (sat-vx e)) (evy (sat-vy e)))
-	(sim-step sim (- vx evx) (- vy evy))))
-
     (chaser-controller sim)
 
     (values (reverse (sim-thrusts sim)) (sim-time sim))))

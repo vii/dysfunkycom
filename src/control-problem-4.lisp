@@ -48,7 +48,8 @@
 
 
 (defun problem-4-controller-go-to-moon (sim)
-  (problem-1-controller sim (/ (sat-r (sim-moon sim)) 2))
+  (problem-1-controller sim (/ (sat-r (sim-moon sim)) 4))
   (sim-step sim)
   (sim-step sim)
-  (problem-3-controller sim (sim-moon sim)))
+  (problem-3-controller sim (sim-moon sim))
+  sim)
