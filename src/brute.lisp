@@ -5,7 +5,7 @@
 
 (defun problem-3-controller-brute (sim &key (target (sim-target sim)) 
 				   (end-condition (chaser-condition-non-changing-score sim)))
-  (let ((time (controller-brute-jumper sim :target target :end-condition end-condition)))
+  (let ((time (controller-brute-jumper sim :target target)))
     (loop repeat (- (round time) 900)
 	  do (sim-step sim))
     (chaser-controller sim :closing-condition end-condition)
