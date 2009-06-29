@@ -30,7 +30,9 @@
 				     (:file "brute" :depends-on ("control"))
 				     (:file "control-superburn" :depends-on ("control"))
 				     (:file "control-moon" :depends-on ("control"))
-				     (:file "control-problem-4" :depends-on ("control" "control-moon")))))
+				     (:file "control-problem-4" :depends-on ("control"))
+				     (:file "control-return-to-fuel-station" :depends-on ("control"))
+				     )))
 
   :depends-on (
 	       :iterate

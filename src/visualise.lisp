@@ -9,6 +9,7 @@
 
 (defvar *visualise-window-height* 0)
 (defvar *visualise-window-width* 0)
+(defvar *auto-zoom* t)
 
 (defun sat-color (sat)
   (case (sat-name sat)
@@ -35,11 +36,11 @@
     (labels (
 	     (sats ()
 	       (remove-if (lambda (sat) (and *visualise-max-radius*
-					(>= (sat-r sat) *visualise-max-radius*))) (sim-sats sim)))
+					     (>= (sat-r sat) *visualise-max-radius*))) (sim-sats sim)))
 	     (rescale ()
 	       (labels ((max-one (func)
 			  (max (* 2 +radius-earth+) (loop for sat across (sats)
-							  maximizing (abs (funcall func sat))))))
+						       maximizing (abs (funcall func sat))))))
 		 (macrolet ((maybe-scale (var func)
 			      (with-gensyms (real-scale)
 				`(let ((,real-scale (coerce (max-one ,func) 'double-float)))
@@ -61,16 +62,16 @@
 	       (max 2 (ceiling r (window-scale))))
 	     (next-step ()
 	       (loop repeat (if playing (+ playing-steps (* time playing-time-scale)) 1) do
-		     (one-step)))
+		    (one-step)))
 	     (one-step ()
 	       (let ((ax 0d0) (ay 0d0))
 		 (when (and frame (= time (first frame)))
 		   (loop for (control val) in (rest frame)
-			 do (cond 
-			      ((= control 2) (setf ax val))
-		    ((= control 3) (setf ay val))
-		    (t (assert (= #x3e80 control))
-		       (assert (zerop time)))))
+		      do (cond 
+			   ((= control 2) (setf ax val))
+			   ((= control 3) (setf ay val))
+			   (t (assert (= #x3e80 control))
+			      (assert (zerop time)))))
 		   (setf frame (pop frames)))
 		 (sim-step sim ax ay))
 	       (unless (zerop (sim-score sim))
@@ -81,11 +82,12 @@
 	     (crashing-into-earth ()
 	       (iter (for sat in-sequence (sats))
 		     (thereis (>= (* 1.01d0 (^2 +radius-earth+))
-			       (+ (^2 (sat-x sat))
-				  (^2 (sat-y sat)))))))
+				  (+ (^2 (sat-x sat))
+				     (^2 (sat-y sat)))))))
 	     (draw ()
 	       (sdl:clear-display (if (crashing-into-earth) sdl:*red* sdl:*black*))
-	       (rescale)
+	       (when *auto-zoom*
+		 (rescale))
 	       (iter (for (x y r) in *show-orbits*)
 		     (sdl:draw-circle-* (xform-x x) (xform-y y) (xform-radius r)
 					:color (sdl:color :r 255 :g 255 :b 0)))
@@ -93,28 +95,28 @@
 					 (xform-radius earth-radius)
 					 :color earth-color)
 	       (let ((sats (sats)))
-		(loop for i downfrom (1- (length sats)) to 0 
-		      for sat = (elt sats i) do
-		      (sdl:draw-filled-circle-* (xform-x (sat-x sat)) (xform-y (sat-y sat))
-						(xform-radius (draw-sat-radius sat))
-						:color (sat-color sat))
-		      #- (and) (visualise-draw-text (format nil "~A ~,3E" (sat-name sat) (sat-r sat))
-						    :x (xform-x (sat-x sat)) :y (xform-y (sat-y sat))
-						    :fg-color (sdl:any-color-but-this (sat-color sat))
-						    :bg-color (sat-color sat))
-		      ))
+		 (loop for i downfrom (1- (length sats)) to 0 
+		    for sat = (elt sats i) do
+		    (sdl:draw-filled-circle-* (xform-x (sat-x sat)) (xform-y (sat-y sat))
+					      (xform-radius (draw-sat-radius sat))
+					      :color (sat-color sat))
+		    #- (and) (visualise-draw-text (format nil "~A ~,3E" (sat-name sat) (sat-r sat))
+						  :x (xform-x (sat-x sat)) :y (xform-y (sat-y sat))
+						  :fg-color (sdl:any-color-but-this (sat-color sat))
+						  :bg-color (sat-color sat))
+		    ))
 	       (visualise-draw-text (format nil "T = ~As (~$ days) scale = ~,3E log10scale = ~D" time (/ time (* 24 60 60)) scale (round (log scale 10))))
 	       (sdl:update-display))
 	     (window ()
 	       (setf window (sdl:window window-width window-height
-				  :title-caption "dysfunkycom"
-				  :icon-caption "ICFP 2009"
-				  :flags '(sdl:sdl-resizable)))
-	       	(unless window
-		  (error "~&Unable to create a SDL window~%"))
-		(setf window-width (sdl:width window)
-		      window-height (sdl:height window))
-		window))
+					:title-caption "dysfunkycom"
+					:icon-caption "ICFP 2009"
+					:flags '(sdl:sdl-resizable)))
+	       (unless window
+		 (error "~&Unable to create a SDL window~%"))
+	       (setf window-width (sdl:width window)
+		     window-height (sdl:height window))
+	       window))
       (sdl:with-init ()
 	(sdl:initialise-default-font sdl:*font-10x20*)
 	(window)
@@ -130,20 +132,20 @@
 			       (window)
 			       (rescale))
 	  (:key-down-event
-	    (:key key)
-	    (cond 
-	      ((sdl:key= key :sdl-key-escape) (sdl:push-quit-event))
-	      ((sdl:key= key :sdl-key-q) (skip-frames 100))
-	      ((sdl:key= key :sdl-key-w) (skip-frames 500))
-	      ((sdl:key= key :sdl-key-e) (skip-frames 1000))
-	      ((sdl:key= key :sdl-key-r) (skip-frames 5000))
-	      ((sdl:key= key :sdl-key-t) (skip-frames 10000))
-	      ((sdl:key= key :sdl-key-y) (skip-frames 50000))
-	      ((sdl:key= key :sdl-key-space)
-	       (setf playing (not playing)))
-	      (t 	
-	       (next-step)
-	       (draw))))
+	   (:key key)
+	   (cond 
+	     ((sdl:key= key :sdl-key-escape) (sdl:push-quit-event))
+	     ((sdl:key= key :sdl-key-q) (skip-frames 100))
+	     ((sdl:key= key :sdl-key-w) (skip-frames 500))
+	     ((sdl:key= key :sdl-key-e) (skip-frames 1000))
+	     ((sdl:key= key :sdl-key-r) (skip-frames 5000))
+	     ((sdl:key= key :sdl-key-t) (skip-frames 10000))
+	     ((sdl:key= key :sdl-key-y) (skip-frames 50000))
+	     ((sdl:key= key :sdl-key-space)
+	      (setf playing (not playing)))
+	     (t 	
+	      (next-step)
+	      (draw))))
 	  (:video-expose-event () (sdl:update-display))
 	  (:idle ()
 		 (when playing
