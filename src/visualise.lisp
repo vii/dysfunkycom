@@ -152,7 +152,8 @@
 	((> 3000 scenario)
 	 'problem-2-controller)
 	((> 4000 scenario)
-	 'problem-3-controller)))
+	 'problem-3-controller)
+	(t 'problem-4-controller)))
 
 (defvar *orbit-code-dir* 
   (with-standard-io-syntax (format nil "~A/../orbit-code/"  
@@ -175,6 +176,11 @@
 (defun visualise-submission (filename)
   (multiple-value-bind (frames scenario) (read-submission filename)
     (visualise-scenario scenario :frames frames)))
+
+(defun simulator-for-scenario (scenario)
+  (let ((scenario (coerce scenario 'double-float)))
+   (let ((sim (make-simulator (file-for-scenario scenario) scenario)))
+     sim)))
 
 
 (defun write-many-submissions (scenarios &key (prefix "submissions/submit-") controller)
