@@ -37,7 +37,7 @@
 	     (let* ((new (copy-sim sim)) 
 		    (target (sim-similar-sat new target)))
 	       (loop repeat step do (sim-step new))
-	       ;; (assert (not (minusp (sim-score new))))
+;; 	       (assert (not (minusp (sim-score new))))
 	       (values (sat-sx target) (sat-sy target)))))
     (loop do
 	  (assert (> step 2))
