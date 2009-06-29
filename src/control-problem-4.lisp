@@ -10,14 +10,17 @@
 	  (finding sat minimizing (sat-distance sat us)))))
 
 (defun problem-4-jump (sim target &key end-condition chasing-steps)
-  (problem-3-controller-brute sim :target target
-			      :end-condition (or end-condition
-						 (and chasing-steps
-						      (let ((counter 0))
-							(lambda (sim)
-							  (declare (ignore sim))
-							  (>= (incf counter) chasing-steps))))
-						 (chaser-condition-non-changing-score sim))))
+;;   (problem-3-controller-brute sim :target target
+;; 			      :jumper #'controller-brute-original-jumper
+;; 			      :end-condition (or end-condition
+;; 						 (and chasing-steps
+;; 						      (let ((counter 0))
+;; 							(lambda (sim)
+;; 							  (declare (ignore sim))
+;; 							  (>= (incf counter) chasing-steps))))
+;; 						 (chaser-condition-non-changing-score sim)))
+  (declare (ignore end-condition chasing-steps))
+  (problem-3-controller-touch sim :target target :jumper #'controller-brute-original-jumper))
 
 (defun fuel-low-p (sim)
   (< (sim-fuel sim) 5000))
@@ -53,23 +56,24 @@
 
 (defun go-for-satellite (sat sim)
   (format t "Stabilizing orbit.~%")
-  (stablize-to-circular-orbit sim)
-  (format t "Going for satellite ~d.~%" (sat-name sat))
-  (problem-4-jump sim sat :chasing-steps 10)
-  (format t "Score after meeting with satellite: ~f~%" (sim-score sim)))
+  (controller-stabilise-to-circular-orbit sim)
+  (format t "Going for satellite ~d (fuel: ~f).~%" (sat-name sat) (sim-fuel sim))
+  (problem-4-jump sim sat)
+  (format t "Score after meeting with satellite: ~f (fuel: ~f)~%" (sim-score sim) (sim-fuel sim)))
 
 (defun problem-4-controller (sim)
   (iter (with satellites = '(0 1 2 3 4 5 6 7 8 9 10))
 	(while satellites)
 	(for nearest = (nearest-satellite satellites sim))
-	(when (or (fuel-low-p sim))
-	  (refuel-controller sim))
 	(go-for-satellite nearest sim)
 	(for prev-score first 0 then score)
 	(for score = (sim-score sim))
 	(when (/= score prev-score)
 	  (format t "New score: ~f~%" score)
 	  (setf satellites (remove nearest satellites)))
+	(while (>= score 0))
+	(when (fuel-low-p sim)
+	  (refuel-controller sim))
 	(while (>= score 0))
 	(finally (return (values (reverse (sim-thrusts sim)) (sim-time sim))))))
 

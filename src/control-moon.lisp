@@ -40,12 +40,10 @@
     (sim-step sim)
     (sim-step sim)
     
-    (cl-user::debug-state (sim-time sim) after-time t0 (- t0 (sim-time sim)))
-    
     (loop do 
 	  (sim-step sim)
 	  (assert (not (minusp (sim-score sim))))
-	  (assert (> (sat-vr (sim-us sim)) 0))
-	  (when (> (sat-r (sim-us sim)) (* 0.90 +orbital-radius-moon+))
-	    (controller-stabilise-to-circular-orbit-around-moon sim)))
+	  (when (> (sat-r (sim-us sim)) (* 0.98 +orbital-radius-moon+))
+	    (controller-stabilise-to-circular-orbit-around-moon sim)
+	    (return)))
     sim))

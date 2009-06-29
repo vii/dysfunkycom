@@ -297,7 +297,8 @@ To see the earth disappear
 
 (defun enemy-period (sim target)
   (handler-case (nth-value 2 (estimate-apogee-and-period sim target))
-    (error () (orbital-period (enemy-semi-major-axis (copy-sim sim) target)))))
+    (error () 
+      (orbital-period (enemy-semi-major-axis (copy-sim sim) target)))))
 
 (defun enemy-position-later (sim target n)
   (mapcar '- (multiple-value-list (sim-pos-at-time sim target (+ (sim-time sim) (floor n))))))
