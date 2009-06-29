@@ -407,6 +407,7 @@
   (lambda (&optional (ax 0d0) (ay 0d0))
     (sim-step sim ax ay)))
 
-
+(defun sim-similar-sat (sim sat)
+  (elt (sim-sats sim) (sat-index sat)))
 
 ;;; (test-run "bin1.obf" 1001d0)

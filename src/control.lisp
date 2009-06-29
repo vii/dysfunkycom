@@ -67,6 +67,8 @@ Outputs: a list of double-floats
 	  (values x0 y0 (- x1 x0) (- y1 y0)))))))
 
 (defun problem-1-controller (sim &optional (r (problem-1-target-radius sim)))
+  (push (list 0 0 r) *show-orbits*)
+  (push (list 0 0 (sat-r (sim-us sim))) *show-orbits*)
   (multiple-value-bind (x y)
       (position-and-direction sim)
     (labels ((boost (speed)
@@ -287,7 +289,7 @@ To see the earth disappear
       (values (reverse (sim-thrusts sim)) (sim-time sim)))))
 
 (defun enemy-semi-major-axis (sim)
-  (let ((points (iter (for output = (funcall sim))
+  (let ((points (iter (for output = (sim-step sim))
 		      (repeat 1000)
 		      (for x = (aref output 2)) (for y = (aref output 3))
 		      (for tx = (aref output 4)) (for ty = (aref output 5))
@@ -296,6 +298,10 @@ To see the earth disappear
 	(ellipse-from-quadratic (estimate-ellipse points))
       (declare (ignore center phi))
       (max a b))))
+
+(defun enemy-period (sim)
+  (handler-case (nth-value 2 (estimate-apogee-and-period sim (sim-target sim)))
+    (error () (orbital-period (enemy-semi-major-axis (copy-sim sim))))))
 
 (defun enemy-position-later (sim n)
   (mapcar '- (multiple-value-list (sim-pos-at-time sim (sim-target sim) (floor n)))))
@@ -314,8 +320,7 @@ To see the earth disappear
   (prog1 (iter (with (x y) = (destructuring-array-bind (nil nil x y)
 				 (funcall (make-simple-simulator-func (copy-sim sim)))
 			       (list x y)))
-	       (with enemy-period = 
-		     (nth-value 2 (estimate-apogee-and-period sim (sim-target sim))))
+	       (with enemy-period = (enemy-period sim))
 	       (with our-period = (orbital-period (d x y)))
 	       (for i from iterations above 0)
 	       (format t "~d..." i)
@@ -347,6 +352,8 @@ To see the earth disappear
       (let ((vx (sat-vx us)) (vy (sat-vy us))
 	    (evx (sat-vx e)) (evy (sat-vy e)))
 	(sim-step sim (- vx evx) (- vy evy))))
+
+    (chaser-controller sim)
 
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
 

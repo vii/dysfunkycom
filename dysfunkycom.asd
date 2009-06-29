@@ -23,9 +23,10 @@
 				     (:file "math" :depends-on ("package" "lu"))
 				     (:file "macros" :depends-on ("package"))
 				     (:file "physics" :depends-on ("constants"))
+				     (:file "chaser" :depends-on ("physics" "macros" "apogee"))
 				     (:file "submission" :depends-on ("constants" "orbit-vm"))
 				     (:file "apogee" :depends-on ("orbit-vm"))
-				     (:file "control" :depends-on ("physics" "macros" "apogee"))
+				     (:file "control" :depends-on ("physics" "macros" "apogee" "chaser"))
 				     (:file "control-superburn" :depends-on ("control"))
 				     )))
 
@@ -34,7 +35,6 @@
 	       :alexandria
 	       :cl-fad
 	       #-darwin :lispbuilder-sdl
-	       :stefil
 	       :ieee-floats))
 
 

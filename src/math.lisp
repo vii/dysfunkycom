@@ -114,7 +114,8 @@
 	(values phi (list a c)))))
 
 ;;; TODO: This seems to give the wrong values
-;;; The problem is that rotation changes a,b.
+;;; The problem is that rotation changes a,b. [???]
+;;; But: the good news is that the semi-major-axis is always OK.
 (defun normalise-ellipse-scale (a c)
   (list (/ (sqrt a)) (/ (sqrt c))))
 
