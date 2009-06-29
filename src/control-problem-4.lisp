@@ -12,8 +12,10 @@
 (defun problem-4-jump (sim target &key end-condition chasing-steps)
   (problem-3-controller-brute sim :target target
 			      :end-condition (or end-condition
-						 (let ((counter 0))
-						   (lambda (sim) (declare (ignore sim)) (>= (incf counter) chasing-steps))))))
+						 (and chasing-steps
+						      (let ((counter 0))
+							(lambda () (>= (incf counter) chasing-steps))))
+						 #'chaser-condition-non-changing-score)))
 
 (defun fuel-low-p (sim) ; TODO
   (declare (ignore sim))
@@ -31,8 +33,10 @@
   (format t "Fuel after meeting with station: ~f~%" (sim-fuel sim)))
 
 (defun go-for-satellite (sat sim)
+  (format t "Stabilizing orbit.~%")
   (stablize-to-circular-orbit sim)
-  (problem-4-jump sim sat :chasing-steps 10))
+  (format t "Going for satellite ~d.~%" (sat-name sat))
+  (problem-4-jump sim sat))
 
 (defun problem-4-controller (sim)
   (iter (with satellites = '(0 1 2 3 4 5 6 7 8 9 10))
