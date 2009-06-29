@@ -25,7 +25,13 @@
 	      (let ((start-time time))
 		(wait-for-apogee)
 		(- time start-time ))))
-     (multiple-value-bind 
-	   (x y)
-	 (wait-for-apogee)
-       (values x y (period) (d x y))))))
+     (cond ((> 0.1 (abs (sat-vr sat)))
+	    (let ((r (d (sat-x sat) (sat-y sat))))
+	     (values (sat-x sat) (sat-y sat)
+		     (orbital-period r)
+		     r)))
+	   (t
+	    (multiple-value-bind 
+		  (x y)
+		(wait-for-apogee)
+	      (values x y (period) (d x y))))))))
