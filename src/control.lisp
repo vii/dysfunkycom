@@ -355,12 +355,7 @@ To see the earth disappear
       (estimate-target-radius-iteratively sim target)
     (push (list 0 0 target-radius) *show-orbits*)
     (iter (repeat wait) (sim-step sim))
-    ;; TODO: get on ellipse orbit instead
-    (problem-3-controller-jump sim target-radius)
-
-    (chaser-controller sim)
-
-    (values (reverse (sim-thrusts sim)) (sim-time sim))))
+    (controller-hohmann-jump-not-stopping sim target-radius)))
 
 
 ;;; previous implementation

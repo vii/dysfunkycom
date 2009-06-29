@@ -280,12 +280,24 @@
   ox
   oy
   
+  (osx 0d0)
+  (osy 0d0)
+
   (sx 0d0)
   (sy 0d0)
 
   done
   oport-offset
   index)
+
+(defun sat-vsx (sat)
+  (with-slots (sx osx)
+      sat
+      (- sx osx)))
+(defun sat-vsy (sat)
+  (with-slots (sy osy)
+      sat
+      (- sy osy)))
 
 (defun sat-vx (sat)
   (with-slots (x ox)
@@ -395,7 +407,10 @@
      oport
      (loop for sat across (sim-sats sim) do
 	   (setf (sat-ox sat) (sat-x sat)
-		 (sat-oy sat) (sat-y sat))
+		 (sat-oy sat) (sat-y sat)
+		 
+		 (sat-osx sat) (sat-sx sat)
+		 (sat-osy sat) (sat-sy sat))
 	   (cond ((sat-oport-offset sat)
 		  (let ((sx (elt oport (sat-oport-offset sat)))
 			(sy (elt oport (1+ (sat-oport-offset sat)))))
