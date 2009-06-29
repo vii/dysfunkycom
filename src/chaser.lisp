@@ -1,7 +1,8 @@
 (in-package #:dysfunkycom)
 
 (defun chaser-controller (sim 
-			  &key (target (sim-target sim)) (step 900) (range 500) (small-step 100))
+			  &key (target (sim-target sim)) (step 900) (range 500) (small-step 100)
+			  (closing-condition (lambda () (zerop (sim-score sim)))))
   (declare (optimize debug))
   (labels ((pos-after-step ()
 	     (let* ((new (copy-sim sim)) 
@@ -10,8 +11,8 @@
 	       (assert (not (minusp (sim-score new))))
 	       (values (sat-sx target) (sat-sy target)))))
     (loop do
-	  (unless (zerop (sim-score sim))
-	    (return))
+	 (unless (funcall closing-condition)
+	   (return))
 	  (multiple-value-bind (sx sy)
 	      (pos-after-step)
 	    (cond ((> range (d sx sy))

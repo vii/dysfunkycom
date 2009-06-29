@@ -10,6 +10,9 @@
 	  (finding sat minimizing (sat-distance sat us)))))
 
 (defun problem-4-jump (sim target &optional (steps 10))
+  (problem-3-controller-brute sim :target target
+			      :end-condition (let ((counter 0)) (lambda () (>= (incf counter) steps))))
+  #+nil
   (destructuring-bind (target-radius wait) 
       (estimate-target-radius-iteratively sim target)
     (push (list 0 0 target-radius) *show-orbits*)
@@ -31,10 +34,11 @@
 (defun refuel-controller (sim)
   (let ((sim (copy-sim sim)))
     (sim-step sim)
-    (format t "Fuel before meeting with station: ~a~%" (sim-fuel sim)))
+    (format t "Fuel before meeting with station: ~f~%" (sim-fuel sim)))
   (problem-1-controller sim (* 2 (sat-r (sim-fuelstation sim))))
   (problem-4-jump sim (sim-fuelstation sim) 1)
-  (format t "Fuel after meeting with station: ~a~%" (sim-fuel sim)))
+  (format t "Distance from fuel station: ~f~%" (sat-distance (sim-fuelstation sim) (sim-us sim)))
+  (format t "Fuel after meeting with station: ~f~%" (sim-fuel sim)))
 
 (defun go-for-satellite (sat sim &optional (time 10) (max-thrust 1000))
   (problem-4-jump sim sat)
