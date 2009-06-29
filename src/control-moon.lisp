@@ -4,12 +4,13 @@
   (sqrt (* +G+ +m-moon+ (- (/ 2 r) (/ 1 a)))))
 
 (defun position-and-direction-moon (sim)
-  (let ((x0 (sat-osx sim))
-	(x1 (sat-sx sim))
-	(y0 (sat-osy sim))
-	(y1 (sat-sy sim)))
-    (values x0 y0 (- x1 x0) (- y1 y0))))
-
+  (let ((moon (sim-moon sim)))
+    (let ((x0 (sat-osx moon))
+	  (x1 (sat-sx moon))
+	  (y0 (sat-osy moon))
+	  (y1 (sat-sy moon)))
+      (values x0 y0 (- x1 x0) (- y1 y0)))))
+  
 (defun controller-stabilise-to-circular-orbit-around-moon (sim)
   (symbol-macrolet ((us (sim-us sim)) (moon (sim-moon sim)))
     (labels (
@@ -34,9 +35,17 @@
   (sim-step sim)
   (sim-step sim)
 
-  (controller-ellipse-jumper sim (sim-moon sim))
-
-  (loop do (sim-step sim)
-	(assert (not (minusp (sim-score sim))))
-	(when (> (sat-r (sim-us sim)) (* 0.90 +orbital-radius-moon+))
-	  (controller-stabilise-to-circular-orbit-around-moon sim))))
+  (let ((t0 (sim-time sim)) 
+	(after-time (controller-ellipse-jumper sim :target (sim-moon sim))))
+    (sim-step sim)
+    (sim-step sim)
+    
+    (cl-user::debug-state (sim-time sim) after-time t0 (- t0 (sim-time sim)))
+    
+    (loop do 
+	  (sim-step sim)
+	  (assert (not (minusp (sim-score sim))))
+	  (assert (> (sat-vr (sim-us sim)) 0))
+	  (when (> (sat-r (sim-us sim)) (* 0.90 +orbital-radius-moon+))
+	    (controller-stabilise-to-circular-orbit-around-moon sim)))
+    sim))

@@ -350,9 +350,9 @@ To see the earth disappear
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
 
-(defun controller-ellipse-jumper (sim &optional (target (sim-target sim)))
+(defun controller-ellipse-jumper (sim &key (target (sim-target sim)) (iterations 1))
   (destructuring-bind (target-radius wait) 
-      (estimate-target-radius-iteratively sim target)
+      (estimate-target-radius-iteratively sim target iterations)
     (push (list 0 0 target-radius) *show-orbits*)
     (iter (repeat wait) (sim-step sim))
     (controller-hohmann-jump-not-stopping sim target-radius)))
