@@ -37,6 +37,23 @@
   (format t "Distance from fuel station: ~f~%" (sat-distance (sim-fuelstation sim) (sim-us sim)))
   (format t "Fuel after meeting with station: ~f~%" (sim-fuel sim)))
 
+(defun change-direction-and-stablise (sim)
+  (let* ((us (sim-us sim)))
+    (sim-step sim (* 2 (sat-vx us)) (* 2 (sat-vy us)))
+    (stablize-to-circular-orbit sim)))
+
+(defun refuel-controller-4004 (sim)
+  (let ((sim (copy-sim sim)))
+    (sim-step sim)
+    (format t "Fuel before meeting with station: ~f~%" (sim-fuel sim)))
+  (problem-1-controller sim (* 20 (sat-r (sim-fuelstation sim))))
+  (change-direction-and-stablise sim)
+  (problem-4-jump sim (sim-fuelstation sim)
+		  :end-condition (let ((fuel (sim-fuel sim)))
+				   (lambda (sim) (> (sim-fuel sim) fuel)))) 
+  (format t "Distance from fuel station: ~f~%" (sat-distance (sim-fuelstation sim) (sim-us sim)))
+  (format t "Fuel after meeting with station: ~f~%" (sim-fuel sim)))
+
 (defun go-for-satellite (sat sim)
   (format t "Stabilizing orbit.~%")
   (controller-stabilise-to-circular-orbit sim)

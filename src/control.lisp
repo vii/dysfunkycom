@@ -493,3 +493,18 @@ Outputs: a list of double-floats
 		     (scale (orbital-speed (sat-r us)))
 		   (sim-step sim (- (- tvx vx)) (- (- tvy vy)))))))
       (stabilise))))
+
+(defun stablize-to-circular-orbit (sim)
+  (multiple-value-bind (x y vx vy)
+      (let ((sim (copy-sim sim)))
+	(sim-step sim 0d0 0d0)
+	(let ((us (sim-us sim)))
+	  (values (sat-x us) (sat-y us) (sat-vx us) (sat-vy us))))
+    (let* ((direction (normalize-vector (vec vx vy)))
+	   (dir-wanted (adjust-direction (calc-unit-tangent-vector (vec x y))
+					 direction))
+	   (v-wanted (sqrt (/ +g-m-earth+ (d x y))))
+	   (dv (v- (vscale dir-wanted v-wanted) (vec vx vy))))
+      ;; stablize
+      (progn
+	(sim-step sim (- (vx dv)) (- (vy dv)))))))
