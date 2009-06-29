@@ -176,6 +176,11 @@
   (multiple-value-bind (frames scenario) (read-submission filename)
     (visualise-scenario scenario :frames frames)))
 
+(defun simulator-for-scenario (scenario)
+  (let ((scenario (coerce scenario 'double-float)))
+   (let ((sim (make-simulator (file-for-scenario scenario) scenario)))
+     sim)))
+
 
 (defun write-many-submissions (scenarios &key (prefix "submissions/submit-") controller)
   (loop for scenario in scenarios collect 

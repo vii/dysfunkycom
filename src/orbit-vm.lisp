@@ -175,21 +175,23 @@
 	  (setf (aref (aref array (1+ index)) (sim-time sim)) (sat-y sat)))))
 
 (defun poscache-extend (poscache new-time)
-  (unless (poscache-array poscache)
-    (setf (poscache-array poscache) 
-	  (let ((array (make-array (* 2 (length (sim-sats (poscache-sim poscache)))))))
-	    (loop for i below (length array) do 
-		  (setf (aref array i) (make-array new-time :element-type 'double-float :adjustable t)))
-	    array)))
+  (let ((new-time (ceiling new-time)))
+   (unless (poscache-array poscache)
+     (setf (poscache-array poscache) 
+	   (let ((array (make-array (* 2 (length (sim-sats (poscache-sim poscache)))))))
+	     (loop for i below (length array) do 
+		   (setf (aref array i) (make-array new-time :element-type 'double-float :adjustable t)))
+	     array)))
 
-  (let ((array (poscache-array poscache)))
-    (loop for a across array
-	  do (adjust-array a (1+ new-time))))
-  (poscache-set poscache)
-  (let ((sim (poscache-sim poscache)))
-    (loop while (>= new-time (sim-time sim)) do
-	 (poscache-set poscache)
-	  (sim-step sim))))
+   (let ((array (poscache-array poscache)))
+     (loop for a across array
+	   do (when (>= new-time (length a)) 
+		(adjust-array a (1+ new-time)))))
+   (poscache-set poscache)
+   (let ((sim (poscache-sim poscache)))
+     (loop while (>= new-time (sim-time sim)) do
+	   (poscache-set poscache)
+	   (sim-step sim)))))
 
 (defun poscache-assert-similar (p1 p2)
   (let ((a1 (poscache-array p1))
@@ -201,11 +203,12 @@
     t))
 
 (defun poscache-pos-at-time (poscache sat time)
-  (when (>= time (poscache-time poscache))
-    (poscache-extend poscache (+ *poscache-extend* time)))
-  (let ((index (* 2 (sat-index sat))) (array (poscache-array poscache)))
-    (values (aref (aref array index) time)
-	    (aref (aref array (1+ index)) time))))
+  (let ((time (round time)))
+    (when (>= time (poscache-time poscache))
+      (poscache-extend poscache (+ *poscache-extend* time)))
+    (let ((index (* 2 (sat-index sat))) (array (poscache-array poscache)))
+      (values (aref (aref array index) time)
+	      (aref (aref array (1+ index)) time)))))
 
 (defun estimate-satellite-states (x y vx vy dvx dvy steps)
   ;; NOTE: dvx and dvy will not change
@@ -409,5 +412,9 @@
 
 (defun sim-similar-sat (sim sat)
   (elt (sim-sats sim) (sat-index sat)))
+
+(defun sat-circular-orbit-vangle (sat)
+  (let ((r (sat-r sat)))
+   (* (signum (sat-vangle sat)) (/ (orbital-speed r) r))))
 
 ;;; (test-run "bin1.obf" 1001d0)

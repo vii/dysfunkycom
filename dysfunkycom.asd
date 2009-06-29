@@ -27,6 +27,7 @@
 				     (:file "submission" :depends-on ("constants" "orbit-vm"))
 				     (:file "apogee" :depends-on ("orbit-vm"))
 				     (:file "control" :depends-on ("physics" "macros" "apogee" "chaser"))
+				     (:file "brute" :depends-on ("control"))
 				     (:file "control-superburn" :depends-on ("control"))
 				     )))
 
