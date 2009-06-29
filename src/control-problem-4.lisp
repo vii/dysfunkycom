@@ -10,15 +10,17 @@
 	  (finding sat minimizing (sat-distance sat us)))))
 
 (defun problem-4-jump (sim target &key end-condition chasing-steps)
-  (problem-3-controller-brute sim :target target
-			      :jumper #'controller-brute-original-jumper
-			      :end-condition (or end-condition
-						 (and chasing-steps
-						      (let ((counter 0))
-							(lambda (sim)
-							  (declare (ignore sim))
-							  (>= (incf counter) chasing-steps))))
-						 (chaser-condition-non-changing-score sim))))
+;;   (problem-3-controller-brute sim :target target
+;; 			      :jumper #'controller-brute-original-jumper
+;; 			      :end-condition (or end-condition
+;; 						 (and chasing-steps
+;; 						      (let ((counter 0))
+;; 							(lambda (sim)
+;; 							  (declare (ignore sim))
+;; 							  (>= (incf counter) chasing-steps))))
+;; 						 (chaser-condition-non-changing-score sim)))
+  (declare (ignore end-condition chasing-steps))
+  (problem-3-controller-touch sim :target target :jumper #'controller-brute-original-jumper))
 
 (defun fuel-low-p (sim)
   (< (sim-fuel sim) 5000))

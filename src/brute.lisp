@@ -12,6 +12,14 @@
 
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
+(defun problem-3-controller-touch (sim &key (target (sim-target sim)) (jumper #'controller-brute-jumper))
+  (let ((time (funcall jumper sim :target target)))
+    (loop repeat (- (round time) 900)
+	  do (sim-step sim))
+    (chaser-controller-touch sim :target target)
+
+    (values (reverse (sim-thrusts sim)) (sim-time sim))))
+
 (defun problem-3-controller-suicide (sim)
   (chaser-controller sim)
   (values (reverse (sim-thrusts sim)) (sim-time sim)))
