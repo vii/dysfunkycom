@@ -1,11 +1,13 @@
 (in-package #:dysfunkycom)
 
+(defparameter *chaser-lookahead* 900)
+
 (defun chaser-condition-non-changing-score (sim)
   (let ((original-score (sim-score sim)))
     (lambda (sim) (/= (sim-score sim) original-score))))
 
 (defun chaser-controller (sim 
-			  &key (target (sim-target sim)) (step 900) (range 1000) (small-step 100)
+			  &key (target (sim-target sim)) (step *chaser-lookahead*) (range 1000) (small-step 100)
 			  (mini-step 10)
 			  (closing-condition (chaser-condition-non-changing-score sim)))
   (declare (optimize debug))
@@ -28,7 +30,7 @@
 		   (loop repeat mini-step do (sim-step sim))))))))
 
 (defun chaser-controller-touch (sim 
-			  &key (target (sim-target sim)) (step 900) (range 800) 
+			  &key (target (sim-target sim)) (step *chaser-lookahead*) (range 800) 
 			  (mini-step 10))
   (declare (optimize debug))
   (labels ((pos-after-step ()

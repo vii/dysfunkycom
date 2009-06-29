@@ -30,7 +30,7 @@
 		   (sim-step sim (- (- tvx vx)) (- (- tvy vy)))))))
       (stabilise))))
 
-(defun problem-4-controller-go-to-moon (sim)
+(defun problem-4-controller-go-to-moon-orbit (sim)
   (problem-1-controller sim (/ (sat-r (sim-moon sim)) 4))
   (sim-step sim)
   (sim-step sim)
@@ -47,3 +47,21 @@
 	    (controller-stabilise-to-circular-orbit-around-moon sim)
 	    (return)))
     sim))
+
+(defun target-sat-p (sat)
+  (numberp (sat-name sat)))
+
+(defun find-moon-sat-near-moon (sim)
+  (iter (for sat in-sequence (sim-sats sim))
+	(when (target-sat-p sat)
+	  (finding sat minimizing (d (sat-sx sat) (sat-sy sat))))))
+
+(defun problem-4-controller-touch-moon-sat (sim)
+  (let ((target (find-moon-sat-near-moon sim)))
+    
+    )
+)
+
+(defun problem-4-controller-go-to-moon (sim)
+  (problem-4-controller-go-to-moon-orbit sim)
+  (problem-4-controller-touch-moon-sat sim))
