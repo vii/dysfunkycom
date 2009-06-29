@@ -11,21 +11,7 @@
 
 (defun problem-4-jump (sim target &optional (steps 10))
   (problem-3-controller-brute sim :target target
-			      :end-condition (let ((counter 0)) (lambda () (>= (incf counter) steps))))
-  #+nil
-  (destructuring-bind (target-radius wait) 
-      (estimate-target-radius-iteratively sim target)
-    (push (list 0 0 target-radius) *show-orbits*)
-    (iter (repeat wait) (sim-step sim))
-
-    (problem-3-controller-jump sim target-radius)
-
-    (let ((us (sim-us sim)) (e (sim-target sim)))
-      (let ((vx (sat-vx us)) (vy (sat-vy us))
-	    (evx (sat-vx e)) (evy (sat-vy e)))
-	(sim-step sim (- vx evx) (- vy evy))))
-
-    (chaser-controller sim :target target :step steps)))
+			      :end-condition (let ((counter 0)) (lambda () (>= (incf counter) steps)))))
 
 (defun fuel-low-p (sim) ; TODO
   (declare (ignore sim))
@@ -36,7 +22,7 @@
     (sim-step sim)
     (format t "Fuel before meeting with station: ~f~%" (sim-fuel sim)))
   (problem-1-controller sim (* 2 (sat-r (sim-fuelstation sim))))
-  (problem-4-jump sim (sim-fuelstation sim) 2)
+  (problem-4-jump sim (sim-fuelstation sim) 10)
   (format t "Distance from fuel station: ~f~%" (sat-distance (sim-fuelstation sim) (sim-us sim)))
   (format t "Fuel after meeting with station: ~f~%" (sim-fuel sim)))
 

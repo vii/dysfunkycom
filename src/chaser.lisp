@@ -11,7 +11,7 @@
 	       (assert (not (minusp (sim-score new))))
 	       (values (sat-sx target) (sat-sy target)))))
     (loop do
-	 (while (funcall closing-condition)
+	 (when (funcall closing-condition)
 	   (return))
 	  (multiple-value-bind (sx sy)
 	      (pos-after-step)
