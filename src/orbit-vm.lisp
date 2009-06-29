@@ -311,6 +311,10 @@
 (defun sat-vangle (sat)
   (normalize-vangle (- (sat-angle sat) (sat-oangle sat))))
 
+(defun sat-distance (sat1 sat2)
+  (d (- (sat-vx sat1) (sat-vx sat2))
+     (- (sat-vy sat1) (sat-vy sat2))))
+
 (defun make-sats-for-scenario (scenario sim)
   (let (sats)
     (labels ((add (sat)
@@ -320,7 +324,7 @@
       (cond ((> scenario 4000)
 	     (add (make-sat :name :fuel :oport-offset 4 :done t))
 	     (add (make-sat :name :moon :oport-offset #x64 :done t))
-	     (loop for k below 12
+	     (loop for k from 0 to 10
 		   do (add (make-sat :name k :oport-offset (+ 7 (* 3 k))))))
 	    ((> scenario 2000)
 	     (add (make-sat :name 0 :oport-offset 4))))
