@@ -123,8 +123,7 @@ Outputs: a list of double-floats
 
 (defun problem-3-controller-jump (sim r)
   (let ((estimated-time (controller-hohmann-jump-not-stopping sim r)))
-    (loop repeat (- (round estimated-time) *chaser-lookahead*)
-	  do (sim-step sim))
+    (sim-repeat-step sim (- (round estimated-time) *chaser-lookahead*))
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
 	
 
@@ -172,14 +171,12 @@ Outputs: a list of double-floats
 
 (defun estimate-our-states-using-sim (sim steps)
   (let ((sim (copy-sim sim)))
-    (loop repeat steps
-	  do (sim-step sim 0d0 0d0))
+    (sim-repeat-step sim steps)
     (position-and-direction sim)))
 
 (defun estimate-target-states-using-sim (sim steps)
   (let ((sim (copy-sim sim)))
-    (loop repeat steps
-	  do (sim-step sim 0d0 0d0))
+    (sim-repeat-step sim steps)
     (position-and-direction-target sim)))
 
 (defun problem-2-chaser (sim &optional (catch-up-time 100))
@@ -248,8 +245,7 @@ Outputs: a list of double-floats
 
       ;; 2. hohmann
       (let ((estimated-time (controller-hohmann-jump-not-stopping sim target-radius)))
-	(loop repeat (- (round estimated-time) *chaser-lookahead*)
-	      do (sim-step sim))
+	(sim-repeat-step sim (- (round estimated-time) *chaser-lookahead*))
 
 	(chaser-controller sim :target target)
 
@@ -310,7 +306,7 @@ Outputs: a list of double-floats
   (destructuring-bind (target-radius wait) 
       (estimate-target-radius-iteratively sim target)
     (push (list 0 0 target-radius) *show-orbits*)
-    (iter (repeat wait) (sim-step sim))
+    (sim-repeat-step sim wait)
     ;; TODO: get on ellipse orbit instead
     (problem-3-controller-jump sim target-radius)
 
@@ -323,7 +319,8 @@ Outputs: a list of double-floats
   (destructuring-bind (target-radius wait) 
       (estimate-target-radius-iteratively sim target iterations)
     (push (list 0 0 target-radius) *show-orbits*)
-    (iter (repeat wait) (sim-step sim))
+    (sim-repeat-step sim wait)
+
     (controller-hohmann-jump-not-stopping sim target-radius)))
 
 
@@ -484,7 +481,7 @@ Outputs: a list of double-floats
 
 
 (defun controller-stabilise-to-circular-orbit (sim)
-  (assert (not (minusp (sim-score sim))))
+  (sim-check sim)
   (symbol-macrolet ((us (sim-us sim)))
     (labels (
 	     (scale (speed)
@@ -503,6 +500,7 @@ Outputs: a list of double-floats
       (stabilise))))
 
 (defun stablize-to-circular-orbit (sim)
+  (sim-check sim)
   (multiple-value-bind (x y vx vy)
       (let ((sim (copy-sim sim)))
 	(sim-step sim 0d0 0d0)

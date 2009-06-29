@@ -32,25 +32,29 @@
 
 (defun chaser-controller-touch (sim 
 			  &key (target (sim-target sim)) (step *chaser-lookahead*) (range 900) (mini-step 10))
-  (declare (optimize debug))
+  (cl-user::debug-state (sim-time sim))
   (labels ((pos-after-step ()
 	     (let* ((new (copy-sim sim)) 
 		    (target (sim-similar-sat new target)))
-	       (loop repeat step do (sim-step new))
+	       (sim-repeat-step new step)
 ;; 	       (assert (not (minusp (sim-score new))))
 	       (values (sat-sx target) (sat-sy target)))))
     (loop do
 	  (assert (> step 2))
+	  (sim-check sim)
 	  (multiple-value-bind (sx sy)
 	      (pos-after-step)
 	    (cond ((> range (d sx sy))
 		   (assert (> +radius-earth+ (d sx sy)))
-		   (loop repeat step do (sim-step sim))
+		   (sim-repeat-step sim step)
 		   (assert (> range (d (sat-sx target) (sat-sy target))))
 		   (return))
 		  (t
+		   (cl-user::debug-state (sim-time sim) (/ sx step) (/ sy step) step)
 		   (sim-step sim (/ sx step) (/ sy step))
 		   (decf step)
-		   (loop repeat mini-step do
-			 (sim-step sim)
-			 (decf step))))))))
+		   (sim-repeat-step sim mini-step)
+		   (decf step mini-step)))))
+      (cl-user::debug-state (sim-time sim) 'out)
+
+    ))

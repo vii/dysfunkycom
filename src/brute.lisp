@@ -48,7 +48,7 @@
 	    target-r)))))))
 
 (defun periodic-bisect-opt (function initial-period-estimate &key 
-			    (initial-slice-width (/ initial-period-estimate 50)) (slices 200)
+			    (initial-slice-width (/ initial-period-estimate 50)) 
 			    (max-val 1)
 			    (epsilon 1))
   (labels (

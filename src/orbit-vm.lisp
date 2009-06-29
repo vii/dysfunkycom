@@ -451,3 +451,10 @@
    (* (signum (sat-vangle sat)) (/ (orbital-speed r) r))))
 
 ;;; (test-run "bin1.obf" 1001d0)
+(defun sim-check (sim)
+  (assert (not (minusp (sim-score sim))) () "Crash (fuel is ~A)" (sim-fuel sim)))
+(defun sim-repeat-step (sim n)
+  (loop repeat (floor n)
+	do (sim-check sim)
+	(sim-step sim))
+  sim)
