@@ -269,6 +269,9 @@
   y
   ox
   oy
+  
+  (sx 0d0)
+  (sy 0d0)
 
   done
   oport-offset
@@ -378,10 +381,15 @@
      (loop for sat across (sim-sats sim) do
 	   (setf (sat-ox sat) (sat-x sat)
 		 (sat-oy sat) (sat-y sat))
-	   (if (sat-oport-offset sat)
-	       (setf (sat-x sat) (- x (elt oport (sat-oport-offset sat)))
-		     (sat-y sat) (- y (elt oport (1+ (sat-oport-offset sat)))))
-	       (setf (sat-x sat) x (sat-y sat) y))))))
+	   (cond ((sat-oport-offset sat)
+		  (let ((sx (elt oport (sat-oport-offset sat)))
+			(sy (elt oport (1+ (sat-oport-offset sat)))))
+		  (setf (sat-x sat) (- x sx)
+			(sat-y sat) (- y sy)
+			(sat-sx sat) sx
+			(sat-sy sat) sy)))
+		 (t
+		  (setf (sat-x sat) x (sat-y sat) y)))))))
 
 (defun sim-step (sim &optional (ax 0d0) (ay 0d0))
   (with-slots (program memory input-port output-port thrusts time)
