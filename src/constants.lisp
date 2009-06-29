@@ -8,3 +8,4 @@
 
 (defconstant +m-moon+ 7.347d22)
 (defconstant +radius-moon+ 1.738d6)
+(defconstant +orbital-radius-moon+ 3.84399d8)

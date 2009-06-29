@@ -23,6 +23,8 @@
     (:moon 1737400)
     (t 400000)))
 
+(defvar *visualise-max-radius* nil)
+
 (defun visualise (sim &key (earth-color (sdl:color :r 20 :g 100 :b 100))
 		  frames
 		  (earth-radius +radius-earth+) 
@@ -31,9 +33,12 @@
   (declare (optimize debug safety))
   (let* ((time 0) (scale (* 2 +radius-earth+)) playing window (frame (pop frames)))
     (labels (
+	     (sats ()
+	       (remove-if (lambda (sat) (and *visualise-max-radius*
+					(>= (sat-r sat) *visualise-max-radius*))) (sim-sats sim)))
 	     (rescale ()
 	       (labels ((max-one (func)
-			  (max (* 2 +radius-earth+) (loop for sat across (sim-sats sim)
+			  (max (* 2 +radius-earth+) (loop for sat across (sats)
 							  maximizing (abs (funcall func sat))))))
 		 (macrolet ((maybe-scale (var func)
 			      (with-gensyms (real-scale)
@@ -74,7 +79,7 @@
 	     (skip-frames (n)
 	       (loop repeat n do (one-step)))
 	     (crashing-into-earth ()
-	       (iter (for sat in-sequence (sim-sats sim))
+	       (iter (for sat in-sequence (sats))
 		     (thereis (>= (* 1.01d0 (^2 +radius-earth+))
 			       (+ (^2 (sat-x sat))
 				  (^2 (sat-y sat)))))))
@@ -87,16 +92,17 @@
 	       (sdl:draw-filled-circle-* (xform-x 0) (xform-y 0)
 					 (xform-radius earth-radius)
 					 :color earth-color)
-	       (loop for i downfrom (1- (length (sim-sats sim))) to 0 
-		     for sat = (elt (sim-sats sim) i) do
-		     (sdl:draw-filled-circle-* (xform-x (sat-x sat)) (xform-y (sat-y sat))
-					       (xform-radius (draw-sat-radius sat))
-					       :color (sat-color sat))
-		     #- (and) (visualise-draw-text (format nil "~A ~,3E" (sat-name sat) (sat-r sat))
-					  :x (xform-x (sat-x sat)) :y (xform-y (sat-y sat))
-					  :fg-color (sdl:any-color-but-this (sat-color sat))
-					  :bg-color (sat-color sat))
-		     )
+	       (let ((sats (sats)))
+		(loop for i downfrom (1- (length sats)) to 0 
+		      for sat = (elt sats i) do
+		      (sdl:draw-filled-circle-* (xform-x (sat-x sat)) (xform-y (sat-y sat))
+						(xform-radius (draw-sat-radius sat))
+						:color (sat-color sat))
+		      #- (and) (visualise-draw-text (format nil "~A ~,3E" (sat-name sat) (sat-r sat))
+						    :x (xform-x (sat-x sat)) :y (xform-y (sat-y sat))
+						    :fg-color (sdl:any-color-but-this (sat-color sat))
+						    :bg-color (sat-color sat))
+		      ))
 	       (visualise-draw-text (format nil "T = ~As (~$ days) scale = ~,3E log10scale = ~D" time (/ time (* 24 60 60)) scale (round (log scale 10))))
 	       (sdl:update-display))
 	     (window ()
