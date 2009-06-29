@@ -33,7 +33,7 @@
   (tformat sim "Fuel after meeting with station: ~f~%" (sim-fuel sim))
   (tformat sim "Stabilizing orbit.~%")
   (sim-check sim)
-  (controller-stabilise-to-circular-orbit sim)
+  (controller-stabilise-to-circular-orbit sim :no-wait t)
   (sim-check sim)
   (tformat sim "Fuel before re-fueling: ~f~%" (sim-fuel sim))
   (sim-check sim)
