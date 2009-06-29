@@ -1,0 +1,19 @@
+This is our terrible source tree.
+
+To use it get SBCL (we use Common Lisp) on Linux.
+
+Then (asdf:operate 'asdf:load-op 'dysfunkycomm)
+
+At the repl, enter
+
+(in-package #:dysfunkycom)
+
+Then
+	(visualise-scenario 1001)
+or any other submission number.
+
+This uses SDL to display everything.
+
+Or 
+
+   (write-many-submissions (list 1001))
