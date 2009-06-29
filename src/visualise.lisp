@@ -176,3 +176,15 @@
 (defun visualise-submission (filename)
   (multiple-value-bind (frames scenario) (read-submission filename)
     (visualise-scenario scenario :frames frames)))
+
+
+(defun write-many-submissions (scenarios &key (prefix "submissions/submit-") controller)
+  (loop for scenario in scenarios collect 
+	`(,scenario
+	  ,(let ((scenario (coerce scenario 'double-float))) 
+		(let ((sim (make-simulator (file-for-scenario scenario) scenario))) 
+		  (funcall (or controller (controller-for-scenario scenario)) sim) 
+		  (write-submission-from-frames scenario 
+						(reverse (sim-thrusts sim))
+						(format nil "~A~D.osf" prefix (round scenario)))
+		  (sim-score sim))))))
