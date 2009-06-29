@@ -281,9 +281,8 @@ To see the earth disappear
       (problem-1-controller sim target-radius)
 
       ;; 3. feedback loop for adjustment
-      
-      (loop for dis = (problem-2-chaser sim)
-	    until (<= dis 300d0))
+      (chaser-controller sim)
+
 
       ;; return val
       (values (reverse (sim-thrusts sim)) (sim-time sim)))))
