@@ -8,7 +8,7 @@
   (let ((time (controller-brute-jumper sim :target target)))
     (loop repeat (- (round time) 900)
 	  do (sim-step sim))
-    (chaser-controller sim :closing-condition end-condition)
+    (chaser-controller sim :target target :closing-condition end-condition)
 
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
