@@ -26,7 +26,7 @@
   (let ((sim (copy-sim sim)))
     (sim-step sim)
     (format t "Fuel before meeting with station: ~f~%" (sim-fuel sim)))
-  (stablize-to-circular-orbit sim)
+  (controller-stabilise-to-circular-orbit sim)
   (problem-1-controller sim (* 2 (sat-r (sim-fuelstation sim))))
   (problem-4-jump sim (sim-fuelstation sim)
 		  :end-condition (let ((fuel (sim-fuel sim)))
