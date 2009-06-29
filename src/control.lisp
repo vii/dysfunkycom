@@ -484,6 +484,7 @@ Outputs: a list of double-floats
 
 
 (defun controller-stabilise-to-circular-orbit (sim)
+  (assert (not (minusp (sim-score sim))))
   (symbol-macrolet ((us (sim-us sim)))
     (labels (
 	     (scale (speed)
