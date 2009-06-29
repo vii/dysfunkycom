@@ -96,14 +96,16 @@
 	(while (>= score 0))
 	(finally (return (values (reverse (sim-thrusts sim)) (sim-time sim))))))
 
-(defun problem-4-fixed-order-controller (order)
+(defun problem-4-fixed-order-controller (order &optional go-to-the-moon)
   (lambda (sim)
     (iter (for id in order)
 	  (for sat = (and (numberp id) (find-sat-by-id id sim)))
 	  (if sat
 	      (go-for-satellite sat sim)
 	      (refuel-controller sim)))
-    (controller-stabilise-to-circular-orbit sim)
+    (if go-to-the-moon
+	(problem-4-controller-go-to-moon sim)
+	(controller-stabilise-to-circular-orbit sim))
     (values (reverse (sim-thrusts sim)) (sim-time sim))))
 
 (defun next-satellite (sim)
