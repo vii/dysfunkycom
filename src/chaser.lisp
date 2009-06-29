@@ -2,7 +2,7 @@
 
 (defun chaser-condition-non-changing-score (sim)
   (let ((original-score (sim-score sim)))
-    (lambda () (= (sim-score sim) original-score))))
+    (lambda () (/= (sim-score sim) original-score))))
 
 (defun chaser-controller (sim 
 			  &key (target (sim-target sim)) (step 900) (range 500) (small-step 100)
