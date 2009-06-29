@@ -153,20 +153,22 @@ Outputs: a list of double-floats
 	  (- (sim-time sim) t0)))))
 
 (defun problem-2-calc-jump (sim target)
-  (let ((target-radius (estimate-target-radius sim target)))
-    (let ((tmpsim (copy-sim sim)))
-      (multiple-value-bind (x0 y0)
-	  (position-and-direction tmpsim)
-	(problem-1-controller tmpsim target-radius)
-	(multiple-value-bind (x1 y1)
-	    (position-and-direction tmpsim)
-	  (values
-	    (sim-time tmpsim)		; hohmann time
-	    (angle x0 y0)		; initial angle
-	    (angle x1 y1)		; final angle
-	    nil ;; (estimate-real-orbital-period tmpsim)
-	    target-radius		; target radius
-	    ))))))
+  (let ((target-radius (estimate-target-radius sim target))
+	(tmpsim (copy-sim sim)))
+    (multiple-value-bind (x0 y0)
+	(let* ((us (sim-us tmpsim)))
+	  (values (sat-x us) (sat-y us)))
+      (problem-1-controller tmpsim target-radius)
+      (multiple-value-bind (x1 y1)
+	  (let* ((us (sim-us tmpsim)))
+	    (values (sat-x us) (sat-y us)))
+	(values
+	  (sim-time tmpsim)   ; hohmann time
+	  (angle x0 y0)	      ; initial angle
+	  (angle x1 y1)	      ; final angle
+	  nil		      ;; (estimate-real-orbital-period tmpsim)
+	  target-radius	      ; target radius
+	  )))))
 
 (defun estimate-our-states-using-sim (sim steps)
   (let ((sim (copy-sim sim)))
@@ -212,7 +214,9 @@ Outputs: a list of double-floats
 
 (defun problem-2-controller (sim &optional (target (sim-target sim)))
   (multiple-value-bind (x0 y0 vx0 vy0)
-      (position-and-direction-target sim)
+      (let* ((target (elt (sim-sats sim) 1)))
+	(values (sat-x target) (sat-y target)
+		(sat-vx target) (sat-vy target)))
     (multiple-value-bind (hohmann-time init-angle end-angle _ target-radius)
 	(problem-2-calc-jump sim target) 
       (declare (ignorable _))
@@ -226,16 +230,19 @@ Outputs: a list of double-floats
 		(- end-angle init-angle)
 		))))
 	(iter (for output = (sim-step sim))
-	      (destructuring-array-bind (nil nil x y xo yo) output
-		(let ((angle-to-opponent
-		       (normalize-angle 
-			(calc-angle-between-vectors
-			 (vec x y)
-			 (vec (- x xo) (- y yo))))))
-		  (when (approximately-equal angle-to-opponent
-					     triggering-angle
-					     0.001)
-		    (leave))))))
+	      (let* ((x (sat-x (sim-us sim)))
+		     (y (sat-y (sim-us sim)))
+		     (xo (sat-x target))
+		     (yo (sat-y target)) 
+		     (angle-to-opponent
+		      (normalize-angle 
+		       (calc-angle-between-vectors
+			(vec x y)
+			(vec xo yo)))))
+		(when (approximately-equal angle-to-opponent
+					   triggering-angle
+					   0.001)
+		  (leave)))))
 
       (print 'leave)
 
@@ -244,9 +251,9 @@ Outputs: a list of double-floats
 	(loop repeat (- (round estimated-time) *chaser-lookahead*)
 	      do (sim-step sim))
 
-      (chaser-controller sim)
+	(chaser-controller sim :target target)
 
-      (values (reverse (sim-thrusts sim)) (sim-time sim))))))
+	(values (reverse (sim-thrusts sim)) (sim-time sim))))))
 
 (defun enemy-semi-major-axis (sim target)
   (let ((points (iter (for time below 1000)
@@ -416,7 +423,7 @@ Outputs: a list of double-floats
 	(nreverse thrusts)))))
 
 
-
+#+ignore
 (defun circular-orbit-appraoching-method-controller (sim &key (seconds-between-impulse 10))
   (labels ((run ()
 	     (multiple-value-bind (xt0 yt0 vxt0 vyt0)

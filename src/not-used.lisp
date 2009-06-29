@@ -220,3 +220,12 @@
        (loop repeat steps
 	     collect (sim-sats sim)
 	     do (sim-step sim))))
+
+
+(defun 4001-controller (sim)
+  (let* ((sats (sort (sim-sats sim) #'< :key 'sat-r)))
+    (iter (for i from 3 below 4)
+	  (for s = (elt sats i))
+	  (problem-2-controller sim s)	; won't work
+	  (stablize-to-circular-orbit sim))))
+
