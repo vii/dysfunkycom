@@ -105,7 +105,7 @@
 					    :fg-color (sdl:any-color-but-this (sat-color sat))
 					    :bg-color (sat-color sat))
 		    ))
-	       (visualise-draw-text (format nil "T = ~As (~$ days) scale = ~,3E log10scale = ~D" time (/ time (* 24 60 60)) scale (round (log scale 10))))
+	       (visualise-draw-text (format nil "T = ~As (~$ days) scale = ~,3E log10scale = ~D fuel = ~D" time (/ time (* 24 60 60)) scale (round (log scale 10)) (round (sim-fuel sim))))
 	       (sdl:update-display))
 	     (window ()
 	       (setf window (sdl:window window-width window-height
