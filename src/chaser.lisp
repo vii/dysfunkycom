@@ -41,6 +41,8 @@
 	  (multiple-value-bind (sx sy)
 	      (pos-after-step)
 	    (cond ((> range (d sx sy))
+		   (loop repeat step do (sim-step sim))
+		   (assert (> range (d (sat-sx target) (sat-sy target))))
 		   (return))
 		  (t
 		   (sim-step sim (/ sx step) (/ sy step))
