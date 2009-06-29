@@ -272,8 +272,9 @@ To see the earth disappear
 			 (vec (- x xo) (- y yo))))))
 		  (when (approximately-equal angle-to-opponent
 					     triggering-angle
-					     0.0001)
+					     0.001)
 		    (leave))))))
+
       (print 'leave)
 
       ;; 2. hohmann
