@@ -417,7 +417,9 @@
 		  (setf (sat-x sat) (- x sx)
 			(sat-y sat) (- y sy)
 			(sat-sx sat) sx
-			(sat-sy sat) sy)))
+			(sat-sy sat) sy
+			(sat-done sat) (or (sat-done sat)
+					   (not (zerop (+ 2 (sat-oport-offset sat))))))))
 		 (t
 		  (setf (sat-x sat) x (sat-y sat) y)))))))
 
