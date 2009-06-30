@@ -2,10 +2,10 @@ Team:
   dysfunkycom (#663)
 
 Members:
-  Fremlin, John  <not@just.any.name>
-  Huang, Jianshi <jianshi.huang@gmail.com>
-  Khuong, Paul   <pvk@pvk.ca>
-  Salvi, Peter   <vukung@yahoo.com>
+  Fremlin, John  <not at just any name>
+  Huang, Jianshi <jianshi huang at gmail com>
+  Khuong, Paul   <pvk at pvk ca>
+  Salvi, Peter   <vukung at yahoo com>
 
 Language:
   Common Lisp (SBCL on Linux(32/64))
@@ -18,6 +18,10 @@ Compilation Instructions
 2. Put (a symbolic link of) dysfunkycom.asd in your ASDF system registry path.
 3. Fire up SBCL, do a (require :dysfunkycom), eliminate problems as needed :)
 4. (in-package :dysfunkycom)
+
+Watching the scenario
+--------------------
+(visualise-scenario 1001)
 
 Creating submissions
 --------------------
