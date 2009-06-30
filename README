@@ -7,8 +7,11 @@ Members:
   Khuong, Paul   <pvk at pvk ca>
   Salvi, Peter   <vukung at yahoo com>
 
-Language:
-  Common Lisp (SBCL on Linux(32/64))
+Environment:
+	Common Lisp (SBCL on Linux(32/64))
+
+Write up (John):
+      http://john.freml.in/icfp-contest-2009
 
 Compilation Instructions
 ------------------------
